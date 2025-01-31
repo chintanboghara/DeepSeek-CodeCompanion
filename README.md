@@ -1,47 +1,46 @@
 # 🧠 DeepSeek Code Companion
 
-AI-powered **Pair Programmer** with **Debugging Superpowers**. Built using **Streamlit**, **Ollama**, and **LangChain** for interactive coding assistance.  
+**DeepSeek Code Companion** is an AI-powered pair programming assistant that helps with debugging, code documentation, and solution design. Built using **Streamlit**, **LangChain**, and **Ollama**, this tool integrates **DeepSeek models** to provide intelligent coding assistance.
 
-## Features
-- **Python Expert** – Get precise coding assistance  
-- **Debugging Assistant** – Helps you debug with strategic print statements  
-- **Code Documentation** – Generates explanations and documentation  
-- **Solution Design** – Provides optimized coding solutions  
+## Installation
 
-## Run with Docker
-#### **Prerequisites**
-- Install **Docker** (Ensure Docker is running)
+- **Python 3.8+**
+- **pip** (Python package manager)
+- **Ollama** (Local LLM engine): [Download Ollama](https://ollama.ai/)
 
-#### **Steps**
-1. **Build the Docker image**
+### Steps
+1. **Clone the repository**
    ```sh
-   docker build -t deepseek-codecompanion .
+   git clone https://github.com/your-repo/deepseek-code-companion.git
+   cd deepseek-code-companion
    ```
 
-2. **Run the container**
+2. **Set up a virtual environment (Optional but recommended)**
    ```sh
-   docker run -p 8501:8501 deepseek-codecompanion
+   python -m venv venv
+   source venv/bin/activate  # On Windows use: venv\Scripts\activate
    ```
 
-3. Open the browser and go to:  
-   **[http://localhost:8501](http://localhost:8501)**
+3. **Install dependencies**
+   ```sh
+   pip install -r requirements.txt
+   ```
 
+4. **Run Ollama in the background** (if not already running)
+   ```sh
+   ollama run
+   ```
 
-## Customization
-### Modify **AI Model**
-Change the model in `app.py`:
-```python
-selected_model = st.selectbox(
-    "Choose Model",
-    ["deepseek-r1:1.5b", "deepseek-r1:3b"],
-    index=0
-)
-```
+5. **Launch the Streamlit app**
+   ```sh
+   streamlit run app.py
+   ```
 
-### Change **Temperature (Creativity Level)**
-Modify this line in `app.py`:
-```python
-llm_engine = ChatOllama(model=selected_model, base_url="http://localhost:11434", temperature=0.3)
-```
-- **Lower (`0.0 - 0.3`)** → More **deterministic**  
-- **Higher (`0.7 - 1.0`)** → More **creative responses**  
+6. **Interact with the AI Assistant**
+   - Open the link provided in the terminal (usually `http://localhost:8501`).
+   - Type in your coding-related queries and receive AI-powered assistance.
+
+## Technologies Used
+- **[Streamlit](https://streamlit.io/)** – UI for the web app.
+- **[LangChain](https://python.langchain.com/)** – Framework for AI-driven conversations.
+- **[Ollama](https://ollama.ai/)** – Local AI model execution.
