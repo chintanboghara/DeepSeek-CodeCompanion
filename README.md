@@ -2,6 +2,9 @@
 
 **DeepSeek Code Companion** is an AI-powered pair programming assistant that helps with debugging, code documentation, and solution design. Built using **Streamlit**, **LangChain**, and **Ollama**, this tool integrates **DeepSeek models** to provide intelligent coding assistance.
 
+![DeepSeek Code Companion](https://github.com/user-attachments/assets/4f38d732-1652-4bc8-9205-e75cd87194df)
+
+
 ## Installation
 
 - **Python 3.8+**
