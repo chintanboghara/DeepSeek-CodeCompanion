@@ -11,8 +11,8 @@
 ### Steps
 1. **Clone the repository**
    ```sh
-   git clone https://github.com/your-repo/deepseek-code-companion.git
-   cd deepseek-code-companion
+   git clone https://github.com/chintanboghara/DeepSeek-CodeCompanion.git
+   cd DeepSeek-CodeCompanion
    ```
 
 2. **Set up a virtual environment (Optional but recommended)**
