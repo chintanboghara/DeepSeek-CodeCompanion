@@ -31,6 +31,12 @@
    ollama run
    ```
 
+   Ensure you have the required DeepSeek models pulled on your system:
+   ```sh
+   ollama pull deepseek-r1:1.5b
+   ollama pull deepseek-r1:3b
+   ```
+
 5. **Launch the Streamlit app**
    ```sh
    streamlit run app.py
@@ -44,3 +50,4 @@
 - **[Streamlit](https://streamlit.io/)** – UI for the web app.
 - **[LangChain](https://python.langchain.com/)** – Framework for AI-driven conversations.
 - **[Ollama](https://ollama.ai/)** – Local AI model execution.
+- **DeepSeek Models** – Includes `deepseek-r1:1.5b` and `deepseek-r1:3b` for enhanced AI-powered coding assistance.
