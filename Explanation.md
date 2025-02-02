@@ -48,8 +48,6 @@ st.caption("🚀 Your AI Pair Programmer with Debugging Superpowers")
 ```
 - Sets the **title** and **subtitle** of the app.
 
----
-
 ## **4️⃣ Sidebar Configuration**
 ```python
 with st.sidebar:
@@ -65,8 +63,6 @@ with st.sidebar:
 - **Markdown (`st.markdown`)**:
   - Lists model capabilities (Python expertise, debugging, documentation, solution design).
   - Provides links to **Ollama** and **LangChain**.
-
----
 
 ## **5️⃣ Initializing the Chat Engine**
 ```python
