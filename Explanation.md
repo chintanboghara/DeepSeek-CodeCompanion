@@ -73,8 +73,6 @@ llm_engine = ChatOllama(model=selected_model, base_url="http://localhost:11434",
   - **`base_url="http://localhost:11434"`** connects to a locally hosted Ollama API.
   - **`temperature=0.3`** makes responses deterministic and focused.
 
----
-
 ## **6️⃣ Configuring System Prompt (AI Personality)**
 ```python
 system_prompt = SystemMessagePromptTemplate.from_template(
@@ -87,8 +85,6 @@ system_prompt = SystemMessagePromptTemplate.from_template(
   - **Provides debugging tips**.
   - **Responds only in English**.
 
----
-
 ## **7️⃣ Session State Management**
 ```python
 if "message_log" not in st.session_state:
@@ -96,8 +92,6 @@ if "message_log" not in st.session_state:
 ```
 - Uses **Streamlit's `session_state`** to store chat history across reruns.
 - Initializes the conversation with an AI greeting message.
-
----
 
 ## **8️⃣ Chat Prompt Chain (Conversation Memory)**
 ```python
@@ -117,8 +111,6 @@ def build_prompt_chain():
   - **AI responses** (`AIMessagePromptTemplate`).
 - Returns a **structured chat prompt** (`ChatPromptTemplate`) for AI processing.
 
----
-
 ## **9️⃣ AI Response Generation**
 ```python
 def generate_ai_response(prompt_chain):
@@ -134,8 +126,6 @@ def generate_ai_response(prompt_chain):
     - **Parses the AI response into plain text**.
 - **Error handling**: Returns a warning message if the AI fails to respond.
 
----
-
 ## **🔟 Displaying the Chat History**
 ```python
 chat_container = st.container()
@@ -146,8 +136,6 @@ with chat_container:
 ```
 - **Displays the chat history** using `st.chat_message()`.
 - **Iterates over past messages**, displaying user and AI responses accordingly.
-
----
 
 ## **1️⃣1️⃣ Handling User Input**
 ```python
