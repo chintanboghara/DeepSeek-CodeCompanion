@@ -157,8 +157,6 @@ if user_query:
 - **Appends AI’s response** to the chat log.
 - **`st.rerun()` refreshes the UI** to display new messages.
 
----
-
 ## **💡 Summary**
 ### **What This Code Does**
 - Creates a **chat-based coding assistant** with debugging support.
@@ -173,5 +171,3 @@ if user_query:
 3. **DeepSeek AI model** generates a response.
 4. **AI response is displayed** in a chat format.
 5. **Session state maintains chat history** for continuity.
-
-Would you like any improvements or feature additions? 🚀
