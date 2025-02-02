@@ -22,8 +22,6 @@ from langchain_core.prompts import (
   - `AIMessagePromptTemplate` stores AI responses.
 - **`ChatPromptTemplate`**: Combines messages into a structured chat sequence.
 
----
-
 ## **2️⃣ Applying Custom CSS for Styling**
 ```python
 st.markdown("""
@@ -42,8 +40,6 @@ st.markdown("""
   - **Dark mode** for the main background (`#1a1a1a`).
   - **Gray theme** for the sidebar (`#2d2d2d`).
   - **White text on dark backgrounds** for input fields and select boxes.
-
----
 
 ## **3️⃣ App Title and Description**
 ```python
