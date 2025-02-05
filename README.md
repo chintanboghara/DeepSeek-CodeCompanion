@@ -1,3 +1,5 @@
+[![Dependency review](https://github.com/chintanboghara/DeepSeek-CodeCompanion/actions/workflows/dependency-review.yml/badge.svg)](https://github.com/chintanboghara/DeepSeek-CodeCompanion/actions/workflows/dependency-review.yml)
+
 # 🧠 DeepSeek Code Companion
 
 **DeepSeek Code Companion** is an AI-powered pair programming assistant that helps with debugging, code documentation, and solution design. Built using **Streamlit**, **LangChain**, and **Ollama**, this tool integrates **DeepSeek models** to provide intelligent coding assistance.
