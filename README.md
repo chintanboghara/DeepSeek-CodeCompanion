@@ -1,3 +1,4 @@
+[![CodeQL Advanced](https://github.com/chintanboghara/DeepSeek-CodeCompanion/actions/workflows/codeql.yml/badge.svg)](https://github.com/chintanboghara/DeepSeek-CodeCompanion/actions/workflows/codeql.yml)
 [![Dependency review](https://github.com/chintanboghara/DeepSeek-CodeCompanion/actions/workflows/dependency-review.yml/badge.svg)](https://github.com/chintanboghara/DeepSeek-CodeCompanion/actions/workflows/dependency-review.yml)
 
 # 🧠 DeepSeek Code Companion
