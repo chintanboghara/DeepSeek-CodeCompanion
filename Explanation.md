@@ -64,7 +64,7 @@ with st.sidebar:
   - Lists model capabilities (Python expertise, debugging, documentation, solution design).
   - Provides links to **Ollama** and **LangChain**.
 
-## **5️⃣ Initializing the Chat Engine**
+## **5. Initializing the Chat Engine**
 ```python
 llm_engine = ChatOllama(model=selected_model, base_url="http://localhost:11434", temperature=0.3)
 ```
@@ -73,7 +73,7 @@ llm_engine = ChatOllama(model=selected_model, base_url="http://localhost:11434",
   - **`base_url="http://localhost:11434"`** connects to a locally hosted Ollama API.
   - **`temperature=0.3`** makes responses deterministic and focused.
 
-## **6️⃣ Configuring System Prompt (AI Personality)**
+## **6. Configuring System Prompt (AI Personality)**
 ```python
 system_prompt = SystemMessagePromptTemplate.from_template(
     "You are an expert AI coding assistant. Provide concise, correct solutions "
