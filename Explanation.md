@@ -41,14 +41,14 @@ st.markdown("""
   - **Gray theme** for the sidebar (`#2d2d2d`).
   - **White text on dark backgrounds** for input fields and select boxes.
 
-## **3️⃣ App Title and Description**
+## **3. App Title and Description**
 ```python
 st.title("🧠 DeepSeek Code Companion")
 st.caption("🚀 Your AI Pair Programmer with Debugging Superpowers")
 ```
 - Sets the **title** and **subtitle** of the app.
 
-## **4️⃣ Sidebar Configuration**
+## **4. Sidebar Configuration**
 ```python
 with st.sidebar:
     st.header("⚙️ Configuration")
