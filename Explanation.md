@@ -1,6 +1,6 @@
 This Streamlit application is a **chat-based AI coding assistant** built using **LangChain, Ollama, and DeepSeek models**. It provides coding assistance, debugging support, and solution design capabilities. Below is a detailed breakdown of the components:
 
-## **1️⃣ Importing Necessary Libraries**
+## **1. Importing Necessary Libraries**
 ```python
 import streamlit as st
 from langchain_ollama import ChatOllama
