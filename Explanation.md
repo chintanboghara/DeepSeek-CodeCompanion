@@ -22,7 +22,7 @@ from langchain_core.prompts import (
   - `AIMessagePromptTemplate` stores AI responses.
 - **`ChatPromptTemplate`**: Combines messages into a structured chat sequence.
 
-## **2️⃣ Applying Custom CSS for Styling**
+## **2. Applying Custom CSS for Styling**
 ```python
 st.markdown("""
 <style>
