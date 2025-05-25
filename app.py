@@ -37,8 +37,8 @@ def display_sidebar():
     Displays the sidebar with configuration options.
 
     Returns:
-        tuple: A tuple containing the selected model (str), temperature (float),
-               and a boolean indicating if the clear history button was pressed.
+        tuple: A tuple containing selected_model (str), temperature (float),
+               top_k (int), top_p (float), and clear_history_button (bool).
     """
     with st.sidebar:
         st.header("⚙️ Configuration")
@@ -46,6 +46,12 @@ def display_sidebar():
         selected_model = st.selectbox("Choose Model", ["deepseek-r1:1.5b", "deepseek-r1:3b"], index=0)
         # Temperature slider for controlling LLM randomness
         temperature = st.slider("Select Temperature", min_value=0.0, max_value=1.0, value=0.3, step=0.1)
+        # Top K input
+        top_k = st.number_input("Top K", min_value=1, max_value=100, value=40, step=1,
+                                help="Controls diversity. Limits the set of next tokens to the K most probable.")
+        # Top P slider
+        top_p = st.slider("Top P", min_value=0.0, max_value=1.0, value=0.9, step=0.01,
+                          help="Controls diversity via nucleus sampling. Selects tokens with cumulative probability > P.")
         st.divider()
         # Clear chat history button
         clear_history_button = st.button("Clear Chat History")
@@ -54,7 +60,7 @@ def display_sidebar():
         st.markdown("- 🐍 Python Expert\n- 🐞 Debugging Assistant\n- 📝 Code Documentation\n- 💡 Solution Design")
         st.divider()
         st.markdown("Built with [Ollama](https://ollama.ai/) | [LangChain](https://python.langchain.com/)")
-    return selected_model, temperature, clear_history_button
+    return selected_model, temperature, top_k, top_p, clear_history_button
 
 def display_chat_interface(message_log):
     """
@@ -75,12 +81,11 @@ def display_chat_interface(message_log):
 # Display the main header
 display_header()
 
-# Initialize LocalStorage - moved here to be accessible before sidebar display if needed,
-# though for this specific task, its placement was fine.
+# Initialize LocalStorage
 localS = LocalStorage(key="deepseek_code_companion_chat")
 
-# Display the sidebar and get model/temperature settings and clear history button state
-selected_model, temperature, clear_history_pressed = display_sidebar()
+# Display the sidebar and get configuration settings
+selected_model, temperature, top_k, top_p, clear_history_pressed = display_sidebar()
 
 # Handle Clear Chat History button click
 if clear_history_pressed:
@@ -89,7 +94,7 @@ if clear_history_pressed:
     st.rerun()
 
 # Initialize the LLM engine with selected settings
-llm_engine = init_llm_engine(selected_model, temperature)
+llm_engine = init_llm_engine(selected_model, temperature, top_k, top_p)
 
 # Session State Management for chat history
 # Initialize message_log in session_state if it doesn't exist

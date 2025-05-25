@@ -17,26 +17,38 @@ import requests
 import logging
 
 # Initialize Chat Engine
-def init_llm_engine(selected_model, temperature):
+def init_llm_engine(selected_model, temperature, top_k, top_p):
     """
     Initializes and returns the ChatOllama LLM engine.
 
     Args:
         selected_model (str): The name of the Ollama model to use.
         temperature (float): The temperature setting for the LLM, controlling randomness.
+        top_k (int): Limits the set of next tokens to the K most probable.
+        top_p (float): Controls diversity via nucleus sampling. Selects tokens
+                       with cumulative probability greater than P.
 
     Returns:
         ChatOllama: An instance of the ChatOllama engine.
     """
-    return ChatOllama(model=selected_model, base_url="http://localhost:11434", temperature=temperature)
+    model_kwargs = {'top_k': top_k, 'top_p': top_p}
+    return ChatOllama(
+        model=selected_model,
+        base_url="http://localhost:11434",
+        temperature=temperature,
+        model_kwargs=model_kwargs
+    )
 
 # System Prompt Configuration
 # This system prompt defines the persona and behavior of the AI assistant.
 # It instructs the AI to act as an expert coding assistant, provide concise
 # and correct solutions, use print statements for debugging, and always respond in English.
+# It also specifies the code formatting requirements.
 system_prompt = SystemMessagePromptTemplate.from_template(
     "You are an expert AI coding assistant. Provide concise, correct solutions "
-    "with strategic print statements for debugging. Always respond in English."
+    "with strategic print statements for debugging. Always respond in English. "
+    "When providing code, always use Markdown code blocks with the appropriate "
+    "language identifier (e.g., ```python ... ``` or ```javascript ... ```)."
 )
 
 # Function: Build Chat Prompt Chain
