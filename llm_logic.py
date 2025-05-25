@@ -20,6 +20,27 @@ import tiktoken # Import tiktoken
 # Define maximum context tokens
 MAX_CONTEXT_TOKENS = 3000
 
+# Predefined system prompts tailored for each specific action.
+# Keys must match PREDEFINED_ACTIONS in app.py for correct mapping.
+PREDEFINED_SYSTEM_PROMPTS = {
+    "General Chat": "You are an expert AI coding assistant. Provide concise, correct solutions with strategic print statements for debugging. Always respond in English. When providing code, always use Markdown code blocks with the appropriate language identifier (e.g., ```python ... ``` or ```javascript ... ```). Please note that for very long conversations, I might not recall the earliest parts of our discussion to stay focused and efficient.",
+    "Explain Code": "You are an expert AI coding assistant. Your current task is to explain the provided code snippet. Focus on its functionality, logic, key components, and how it works. Describe its purpose, inputs, and outputs. If relevant, suggest potential improvements or edge cases. Always respond in English. When providing code examples as part of your explanation, always use Markdown code blocks with the appropriate language identifier. Please note that for very long conversations, I might not recall the earliest parts of our discussion.",
+    "Debug Code": "You are an expert AI coding assistant specializing in debugging code. Analyze the provided code snippet and any accompanying error messages or descriptions of issues. Identify potential bugs, logical errors, or areas that might not behave as expected. Suggest fixes or debugging strategies, including strategic print statements or checks. Explain your reasoning clearly. Always respond in English. When providing corrected code or examples, always use Markdown code blocks with the appropriate language identifier. Please note that for very long conversations, I might not recall the earliest parts of our discussion.",
+    "Write Documentation": "You are an expert AI coding assistant with a talent for writing clear and concise technical documentation. For the provided code snippet, generate appropriate documentation. This may include:\n- A summary of the code's purpose and functionality.\n- Descriptions of functions/classes, including their parameters and return values.\n- Usage examples if applicable.\n- Notes on dependencies or important considerations.\nFormat the documentation clearly, using Markdown. For any code examples within the documentation, use Markdown code blocks with language identifiers. Always respond in English. Please note that for very long conversations, I might not recall the earliest parts of our discussion."
+}
+
+def get_system_prompt(action: str) -> str:
+    """
+    Retrieves the system prompt text for a given action.
+
+    Args:
+        action (str): The selected action (e.g., "General Chat", "Explain Code").
+
+    Returns:
+        str: The system prompt text. Defaults to "General Chat" prompt if action is not found.
+    """
+    return PREDEFINED_SYSTEM_PROMPTS.get(action, PREDEFINED_SYSTEM_PROMPTS["General Chat"])
+
 # Initialize Chat Engine
 def init_llm_engine(selected_model, temperature, top_k, top_p):
     """
@@ -43,33 +64,24 @@ def init_llm_engine(selected_model, temperature, top_k, top_p):
         model_kwargs=model_kwargs
     )
 
-# System Prompt Configuration
-# This system prompt defines the persona and behavior of the AI assistant.
-# It instructs the AI to act as an expert coding assistant, provide concise
-# and correct solutions, use print statements for debugging, always respond in English,
-# specify code formatting, and manage expectations about context length.
-system_prompt = SystemMessagePromptTemplate.from_template(
-    "You are an expert AI coding assistant. Provide concise, correct solutions "
-    "with strategic print statements for debugging. Always respond in English. "
-    "When providing code, always use Markdown code blocks with the appropriate "
-    "language identifier (e.g., ```python ... ``` or ```javascript ... ```). "
-    "Please note that for very long conversations, I might not recall the earliest "
-    "parts of our discussion to stay focused and efficient."
-)
+# System Prompt Configuration is now handled dynamically by get_system_prompt
 
 # Function: Build Chat Prompt Chain
-def build_prompt_chain(message_log):
+def build_prompt_chain(message_log, selected_action: str):
     """
     Constructs a LangChain ChatPromptTemplate from the message history,
-    managing the context window to stay within MAX_CONTEXT_TOKENS.
+    using an action-specific system prompt and managing the context window
+    to stay within MAX_CONTEXT_TOKENS.
 
-    The prompt includes the system prompt and the most recent messages that fit
-    within the token limit. Messages are added in reverse chronological order
-    (newest first) until the token limit is approached.
+    The prompt includes the dynamically selected system prompt and the most
+    recent messages that fit within the token limit. Messages are added in
+    reverse chronological order (newest first) until the token limit is approached.
 
     Args:
         message_log (list): A list of dictionaries, where each dictionary
                               represents a chat message with "role" and "content".
+        selected_action (str): The action selected by the user, used to determine
+                               the system prompt.
 
     Returns:
         ChatPromptTemplate: A LangChain ChatPromptTemplate object.
@@ -81,9 +93,12 @@ def build_prompt_chain(message_log):
         """Helper function to count tokens in a given text."""
         return len(tokenizer.encode(text))
 
-    # Get system prompt text and count its tokens
-    system_prompt_text = system_prompt.prompt.template
-    system_tokens = count_tokens(system_prompt_text)
+    # Get action-specific system prompt text and create the prompt template
+    action_specific_prompt_text = get_system_prompt(selected_action)
+    current_system_prompt = SystemMessagePromptTemplate.from_template(action_specific_prompt_text)
+    
+    # Count tokens for the action-specific system prompt
+    system_tokens = count_tokens(action_specific_prompt_text)
     
     current_tokens = system_tokens
     managed_message_log = []
@@ -101,7 +116,7 @@ def build_prompt_chain(message_log):
             break
             
     # Construct the prompt sequence
-    prompt_sequence = [system_prompt] # Start with the system prompt
+    prompt_sequence = [current_system_prompt] # Start with the action-specific system prompt
     
     # Add managed messages to the prompt sequence
     for msg in managed_message_log:
