@@ -25,6 +25,18 @@ st_autorefresh(interval=2000, limit=None, key="llm_refresh")
 # Predefined actions for the AI
 PREDEFINED_ACTIONS = ["General Chat", "Explain Code", "Debug Code", "Write Documentation"]
 
+# Initialize session state keys for LLM engine caching and configuration
+if "llm_engine_instance" not in st.session_state:
+    st.session_state.llm_engine_instance = None
+if "current_llm_model_name" not in st.session_state:
+    st.session_state.current_llm_model_name = None
+if "current_temperature" not in st.session_state:
+    st.session_state.current_temperature = None
+if "current_top_k" not in st.session_state:
+    st.session_state.current_top_k = None
+if "current_top_p" not in st.session_state:
+    st.session_state.current_top_p = None
+
 # Function to load CSS
 def load_css(file_name):
     """Loads a CSS file into the Streamlit application.
@@ -116,8 +128,25 @@ if clear_history_pressed:
     st.session_state.active_llm_task = None 
     st.rerun()
 
-# Initialize the LLM engine with selected settings
-llm_engine = init_llm_engine(selected_model, temperature, top_k, top_p)
+# Conditional LLM Engine Initialization & Caching
+needs_reinitialization = (
+    st.session_state.llm_engine_instance is None or
+    selected_model != st.session_state.current_llm_model_name or
+    temperature != st.session_state.current_temperature or
+    top_k != st.session_state.current_top_k or
+    top_p != st.session_state.current_top_p
+)
+
+if needs_reinitialization:
+    with st.spinner(f"Initializing AI model: {selected_model}... Please wait."):
+        llm_engine = init_llm_engine(selected_model, temperature, top_k, top_p)
+        st.session_state.llm_engine_instance = llm_engine
+        st.session_state.current_llm_model_name = selected_model
+        st.session_state.current_temperature = temperature
+        st.session_state.current_top_k = top_k
+        st.session_state.current_top_p = top_p
+else:
+    llm_engine = st.session_state.llm_engine_instance
 
 # Session State Management for chat history and active task
 if "message_log" not in st.session_state:
