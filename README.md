@@ -74,12 +74,18 @@ Once the app is running, interact with the AI Assistant via the web interface:
 - **Temperature Control**: Adjust the "Select Temperature" slider in the sidebar (range 0.0 to 1.0, default 0.3).
     - Lower values (e.g., 0.1-0.3) produce more focused and deterministic responses.
     - Higher values (e.g., 0.7-0.9) lead to more creative and diverse, but potentially less accurate, responses.
+- **Top K Sampling**: Configure the "Top K" value using the number input in the sidebar (default 40, range 1-100).
+    - This parameter limits the LLM's selection of the next token to the K most probable tokens, influencing response diversity.
+- **Top P (Nucleus) Sampling**: Adjust the "Top P" slider in the sidebar (default 0.9, range 0.0-1.0).
+    - This parameter selects tokens based on their cumulative probability, ensuring that only the most probable tokens whose sum exceeds P are considered. It provides another way to control response diversity.
 - **Chat History Persistence**:
     - Your conversations are automatically saved to your browser's local storage.
     - This means you can close the browser or refresh the page, and your current chat history will be reloaded when you return.
 - **Clear Chat History**:
     - A "Clear Chat History" button is available in the sidebar.
     - Clicking this button will remove the current conversation from both the application's session and your browser's local storage, allowing you to start a fresh chat.
+- **Improved Code Formatting**:
+    - The AI has been instructed to consistently use Markdown code blocks with language identifiers (e.g., ` ```python ... ``` `). This enhances the clarity and readability of code snippets in the chat.
 
 ### Example Queries:
 
