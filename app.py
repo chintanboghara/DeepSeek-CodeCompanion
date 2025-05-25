@@ -36,6 +36,8 @@ if "current_top_k" not in st.session_state:
     st.session_state.current_top_k = None
 if "current_top_p" not in st.session_state:
     st.session_state.current_top_p = None
+if "use_custom_dark_theme" not in st.session_state:
+    st.session_state.use_custom_dark_theme = True # Default to True
 
 # Function to load CSS
 def load_css(file_name):
@@ -47,8 +49,9 @@ def load_css(file_name):
     with open(file_name) as f:
         st.markdown(f'<style>{f.read()}</style>', unsafe_allow_html=True)
 
-# Load custom CSS from styles.css
-load_css("styles.css")
+# Conditionally load custom CSS based on session state
+if st.session_state.get("use_custom_dark_theme", True):
+    load_css("styles.css")
 
 # UI Components
 def display_header():
@@ -75,6 +78,16 @@ def display_sidebar():
             help="Select a specific task for the AI to focus on. This will tailor its responses and system prompt."
         )
         st.divider() # Visual separation
+        
+        # Theme toggle
+        st.toggle(
+            "Enable Custom Dark Theme",
+            value=st.session_state.get("use_custom_dark_theme", True),
+            key="use_custom_dark_theme",
+            help="Toggle the custom dark theme for the application. When off, Streamlit's default theme will be used."
+        )
+        st.divider()
+
         # Model selection dropdown
         selected_model = st.selectbox("Choose Model", ["deepseek-r1:1.5b", "deepseek-r1:3b"], index=0)
         # Temperature slider for controlling LLM randomness

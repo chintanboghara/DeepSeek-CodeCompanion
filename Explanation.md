@@ -41,6 +41,15 @@ st.markdown("""
   - **Gray theme** for the sidebar (`#2d2d2d`).
   - **White text on dark backgrounds** for input fields and select boxes.
 
+### Theme Customization
+
+The application utilizes a custom dark theme by default to provide a consistent look and feel. This theme is defined in the `styles.css` file.
+
+Users have the option to toggle this custom dark theme on or off:
+- In the sidebar, there is an "Enable Custom Dark Theme" switch.
+- **Enabled (Default)**: The custom dark theme styles are applied.
+- **Disabled**: The custom dark theme styles are not loaded. The application will then revert to Streamlit's native theming, which respects your operating system (OS) or browser's light/dark mode settings. This allows you to use Streamlit's default light theme if your system is set to light mode, or Streamlit's default dark theme if your system is set to dark mode.
+
 ## **3. App Title and Description**
 ```python
 st.title("🧠 DeepSeek Code Companion")
