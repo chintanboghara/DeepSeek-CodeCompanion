@@ -1,0 +1,40 @@
+# Git
+.git
+.gitignore
+
+# Python virtual environment
+venv/
+*.venv/
+.venv/
+
+# Python bytecode and cache
+__pycache__/
+*.py[cod]
+*$py.class
+
+# OS-specific files
+.DS_Store
+Thumbs.db
+
+# IDE and project files (examples, add more if needed for specific IDEs)
+.idea/
+.vscode/
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.sw?
+
+# Secrets or local configuration (if any, though ideally not in repo)
+# .env
+
+# Test reports or build artifacts (if any)
+# htmlcov/
+# .tox/
+# .nox/
+# .coverage
+# .cache
+# nosetests.xml
+# coverage.xml
+# *.cover
+# *.log

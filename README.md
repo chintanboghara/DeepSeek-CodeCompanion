@@ -65,6 +65,84 @@ The application is structured for clarity, with the user interface managed by `a
 
    Open the link provided in the terminal (usually `http://localhost:8501`) in your web browser. Type in your coding-related queries to receive AI-powered assistance.
 
+## Deployment with Docker
+
+Deploying the DeepSeek Code Companion using Docker and Docker Compose offers a consistent and isolated environment, managing both the Streamlit application and the Ollama LLM service.
+
+### Prerequisites
+
+- **Docker**: Ensure Docker is installed on your system.
+  - Installation guide: [https://docs.docker.com/engine/install/](https://docs.docker.com/engine/install/)
+- **Docker Compose**: Ensure Docker Compose is installed.
+  - Installation guide: [https://docs.docker.com/compose/install/](https://docs.docker.com/compose/install/)
+
+### Running the Application
+
+1.  **Clone the repository** (if you haven't already):
+    ```bash
+    git clone https://github.com/chintanboghara/DeepSeek-CodeCompanion.git
+    cd DeepSeek-CodeCompanion
+    ```
+
+2.  **Start the application using Docker Compose**:
+    ```bash
+    docker-compose up --build
+    ```
+    - The `--build` flag is recommended for the first time you run the command or when there are changes to the `Dockerfile` or application code (e.g., `app.py`, `requirements.txt`). For subsequent runs, `docker-compose up` might be faster if no code changes occurred.
+    - This command will build the Docker image for the Streamlit application and start both the `app` and `ollama` services.
+
+3.  **Access the application**:
+    - Once the services are running, the Streamlit application will be available at `http://localhost:8501` in your web browser.
+
+### Ollama Model Management
+
+Ollama models are persisted in a Docker volume named `ollama_data` (as defined in `docker-compose.yml`). This means models you pull will be available even if you stop and restart the containers.
+
+To manage models within the Ollama service:
+
+-   **List currently available models**:
+    ```bash
+    docker-compose exec ollama ollama list
+    ```
+-   **Pull a new model** (e.g., `deepseek-r1:1.5b`):
+    ```bash
+    docker-compose exec ollama ollama pull deepseek-r1:1.5b
+    ```
+-   **Pull another model** (e.g., `deepseek-r1:3b`):
+    ```bash
+    docker-compose exec ollama ollama pull deepseek-r1:3b
+    ```
+    You only need to pull each model once. The application's sidebar will allow you to select from the models available to the Ollama service.
+
+### Ollama Base URL Configuration
+
+- The `docker-compose.yml` file automatically configures the `OLLAMA_BASE_URL` environment variable for the Streamlit application service (`app`) to `http://ollama:11434`. This is the internal address of the `ollama` service within the Docker network.
+- If you were running `app.py` locally for development (outside of this Docker Compose setup) and Ollama was also running locally, `app.py` would default to `http://localhost:11434` for the Ollama API, or you could set the `OLLAMA_BASE_URL` environment variable manually.
+
+### Stopping the Application
+
+To stop the application and remove the containers:
+```bash
+docker-compose down
+```
+- This command will stop and remove the containers defined in `docker-compose.yml`. The `ollama_data` volume will persist, preserving your downloaded Ollama models.
+
+### GPU Support (Note)
+
+The provided `docker-compose.yml` is configured for CPU usage by Ollama. For GPU support, you would need to uncomment and configure the `deploy` section within the `ollama` service definition in `docker-compose.yml`. This typically involves:
+- Ensuring your host system has the necessary NVIDIA drivers and the NVIDIA Container Toolkit installed.
+- Modifying the `deploy` section to specify GPU resources, for example:
+  ```yaml
+  # deploy:
+  #   resources:
+  #     reservations:
+  #       devices:
+  #         - driver: nvidia
+  #           count: 1 # or 'all'
+  #           capabilities: [gpu]
+  ```
+Refer to the official Docker and Ollama documentation for detailed instructions on GPU passthrough.
+
 ## Features and Usage
 
 Once the app is running, interact with the AI Assistant via the web interface:

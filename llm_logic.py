@@ -42,7 +42,7 @@ def get_system_prompt(action: str) -> str:
     return PREDEFINED_SYSTEM_PROMPTS.get(action, PREDEFINED_SYSTEM_PROMPTS["General Chat"])
 
 # Initialize Chat Engine
-def init_llm_engine(selected_model, temperature, top_k, top_p):
+def init_llm_engine(selected_model, temperature, top_k, top_p, ollama_base_url: str):
     """
     Initializes and returns the ChatOllama LLM engine.
 
@@ -52,6 +52,7 @@ def init_llm_engine(selected_model, temperature, top_k, top_p):
         top_k (int): Limits the set of next tokens to the K most probable.
         top_p (float): Controls diversity via nucleus sampling. Selects tokens
                        with cumulative probability greater than P.
+        ollama_base_url (str): The base URL for the Ollama API.
 
     Returns:
         ChatOllama: An instance of the ChatOllama engine.
@@ -59,7 +60,7 @@ def init_llm_engine(selected_model, temperature, top_k, top_p):
     model_kwargs = {'top_k': top_k, 'top_p': top_p}
     return ChatOllama(
         model=selected_model,
-        base_url="http://localhost:11434",
+        base_url=ollama_base_url,
         temperature=temperature,
         model_kwargs=model_kwargs
     )
