@@ -1,0 +1,42 @@
+version: '3.8'
+
+services:
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    ports:
+      - "8501:8501"
+    environment:
+      - OLLAMA_BASE_URL=http://ollama:11434
+      # Add any other environment variables your Streamlit app might need
+      # For example, if you had specific logging levels or feature flags:
+      # - LOG_LEVEL=INFO
+    depends_on:
+      - ollama
+    networks:
+      - deepseek_net
+
+  ollama:
+    image: ollama/ollama:latest # Use the latest official image
+    ports:
+      - "11434:11434"
+    volumes:
+      - ollama_data:/root/.ollama
+    # To enable GPU access (example for NVIDIA GPUs, uncomment and adapt if needed):
+    # deploy:
+    #   resources:
+    #     reservations:
+    #       devices:
+    #         - driver: nvidia
+    #           count: 1 # or 'all'
+    #           capabilities: [gpu]
+    networks:
+      - deepseek_net
+
+volumes:
+  ollama_data: # This volume persists Ollama models
+
+networks:
+  deepseek_net:
+    driver: bridge

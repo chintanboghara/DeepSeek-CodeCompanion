@@ -15,9 +15,13 @@ from llm_logic import (
 )
 from task_manager import LLMTaskManager # Import TaskManager
 import logging # Import logging
+import os # Import os
 
 # Initialize Task Manager
 task_manager = LLMTaskManager()
+
+# Get Ollama Base URL from environment variable or use default
+OLLAMA_BASE_URL = os.environ.get("OLLAMA_BASE_URL", "http://localhost:11434")
 
 # Autorefresh every 2 seconds
 st_autorefresh(interval=2000, limit=None, key="llm_refresh")
@@ -152,7 +156,7 @@ needs_reinitialization = (
 
 if needs_reinitialization:
     with st.spinner(f"Initializing AI model: {selected_model}... Please wait."):
-        llm_engine = init_llm_engine(selected_model, temperature, top_k, top_p)
+        llm_engine = init_llm_engine(selected_model, temperature, top_k, top_p, OLLAMA_BASE_URL)
         st.session_state.llm_engine_instance = llm_engine
         st.session_state.current_llm_model_name = selected_model
         st.session_state.current_temperature = temperature
