@@ -96,6 +96,9 @@ Once the app is running, interact with the AI Assistant via the web interface:
     - It uses a token-based sliding window approach, prioritizing recent parts of the conversation if the total length becomes too extensive (currently around 3000 tokens using `cl100k_base` tokenizer).
     - This helps ensure stable performance and prevents errors during long interactions.
     - The AI's system prompt also includes a gentle reminder that it may not recall the earliest parts of a very long discussion.
+- **Model Loading Indicator & Caching**:
+    - When you change the selected AI model or adjust its core parameters (like Temperature, Top K, Top P), a loading indicator (spinner) will appear while the new model configuration is being initialized. This provides clear feedback during model setup.
+    - The AI model engine is cached within your current session. The loading indicator will only appear if the model or its key parameters need to be re-initialized, saving time on subsequent operations if the configuration hasn't changed.
 - **Asynchronous LLM Calls (Non-Blocking UI)**:
     - The application now processes LLM requests in the background, ensuring the user interface remains responsive.
     - **User Experience**:
