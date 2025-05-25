@@ -6,6 +6,7 @@ configuring the LLM model, and managing user interactions.
 It uses `llm_logic.py` for the core language model interactions.
 """
 import streamlit as st
+from streamlit_local_storage import LocalStorage # Import LocalStorage
 from llm_logic import (
     init_llm_engine,
     build_prompt_chain,
@@ -36,7 +37,8 @@ def display_sidebar():
     Displays the sidebar with configuration options.
 
     Returns:
-        tuple: A tuple containing the selected model (str) and temperature (float).
+        tuple: A tuple containing the selected model (str), temperature (float),
+               and a boolean indicating if the clear history button was pressed.
     """
     with st.sidebar:
         st.header("⚙️ Configuration")
@@ -45,11 +47,14 @@ def display_sidebar():
         # Temperature slider for controlling LLM randomness
         temperature = st.slider("Select Temperature", min_value=0.0, max_value=1.0, value=0.3, step=0.1)
         st.divider()
+        # Clear chat history button
+        clear_history_button = st.button("Clear Chat History")
+        st.divider()
         st.markdown("### Model Capabilities")
         st.markdown("- 🐍 Python Expert\n- 🐞 Debugging Assistant\n- 📝 Code Documentation\n- 💡 Solution Design")
         st.divider()
         st.markdown("Built with [Ollama](https://ollama.ai/) | [LangChain](https://python.langchain.com/)")
-    return selected_model, temperature
+    return selected_model, temperature, clear_history_button
 
 def display_chat_interface(message_log):
     """
@@ -70,8 +75,18 @@ def display_chat_interface(message_log):
 # Display the main header
 display_header()
 
-# Display the sidebar and get model/temperature settings
-selected_model, temperature = display_sidebar()
+# Initialize LocalStorage - moved here to be accessible before sidebar display if needed,
+# though for this specific task, its placement was fine.
+localS = LocalStorage(key="deepseek_code_companion_chat")
+
+# Display the sidebar and get model/temperature settings and clear history button state
+selected_model, temperature, clear_history_pressed = display_sidebar()
+
+# Handle Clear Chat History button click
+if clear_history_pressed:
+    st.session_state.message_log = [{"role": "ai", "content": "Hi! I'm DeepSeek. How can I help you code today? 💻"}]
+    localS.deleteItem('message_log')
+    st.rerun()
 
 # Initialize the LLM engine with selected settings
 llm_engine = init_llm_engine(selected_model, temperature)
@@ -79,7 +94,13 @@ llm_engine = init_llm_engine(selected_model, temperature)
 # Session State Management for chat history
 # Initialize message_log in session_state if it doesn't exist
 if "message_log" not in st.session_state:
-    st.session_state.message_log = [{"role": "ai", "content": "Hi! I'm DeepSeek. How can I help you code today? 💻"}]
+    # Try to load chat history from local storage
+    stored_message_log = localS.getItem('message_log')
+    if stored_message_log:
+        st.session_state.message_log = stored_message_log
+    else:
+        # Default welcome message if no history is found
+        st.session_state.message_log = [{"role": "ai", "content": "Hi! I'm DeepSeek. How can I help you code today? 💻"}]
 
 # Display the existing chat messages
 display_chat_interface(st.session_state.message_log)
@@ -102,6 +123,8 @@ if user_query and user_query.strip():
 
     # Add AI's response to the message log
     st.session_state.message_log.append({"role": "ai", "content": ai_response})
+    # Save updated message log to local storage
+    localS.setItem('message_log', st.session_state.message_log)
     # Rerun the Streamlit app to update the chat interface
     st.rerun()
 elif user_query:  # If user_query exists but is only whitespace
