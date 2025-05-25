@@ -1,4 +1,8 @@
-streamlit
-langchain_core
-langchain_community
-langchain_ollama
+streamlit==1.45.1
+langchain-core==0.3.0
+langchain-ollama==0.2.0
+requests==2.32.3
+pytest==8.0.0
+streamlit-local-storage==0.0.25
+tiktoken==0.7.0
+streamlit-autorefresh==0.1.0
