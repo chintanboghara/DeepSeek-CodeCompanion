@@ -1,0 +1,7 @@
+.main { background-color: #1a1a1a; color: #ffffff; }
+.sidebar .sidebar-content { background-color: #2d2d2d; }
+.stTextInput textarea, .stSelectbox div[data-baseweb="select"],
+.stSelectbox option, div[role="listbox"] div { 
+    color: white !important; background-color: #3d3d3d !important;
+}
+.stSelectbox svg { fill: white !important; }

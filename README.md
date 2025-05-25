@@ -7,6 +7,8 @@
 
 **DeepSeek Code Companion** is an AI-powered pair programming assistant designed to assist with debugging, code documentation, and solution design. Built using **Streamlit**, **LangChain**, and **Ollama**, this tool integrates **DeepSeek models** to deliver intelligent, local coding assistance.
 
+The application is structured for clarity, with the user interface managed by `app.py`, core LLM interactions handled by `llm_logic.py`, and styling defined in `styles.css`.
+
 ## Installation
 
 ### Prerequisites
@@ -33,6 +35,7 @@
 
 3. **Install dependencies**
 
+   The `requirements.txt` file lists all necessary Python packages, including Streamlit, LangChain components, and Requests.
    ```sh
    pip install -r requirements.txt
    ```
@@ -62,15 +65,23 @@
 
    Open the link provided in the terminal (usually `http://localhost:8501`) in your web browser. Type in your coding-related queries to receive AI-powered assistance.
 
-## Usage
+## Features and Usage
 
-Once the app is running, interact with the AI Assistant via the web interface. Here are some example queries to get started:
+Once the app is running, interact with the AI Assistant via the web interface:
+
+- **Chat Interface**: Type your coding-related questions into the input box at the bottom of the screen.
+- **Model Selection**: Choose between different DeepSeek models from the sidebar.
+- **Temperature Control**: Adjust the "Select Temperature" slider in the sidebar (range 0.0 to 1.0, default 0.3).
+    - Lower values (e.g., 0.1-0.3) produce more focused and deterministic responses.
+    - Higher values (e.g., 0.7-0.9) lead to more creative and diverse, but potentially less accurate, responses.
+
+### Example Queries:
 
 - "How do I debug a Python script that crashes unexpectedly?"
 - "Can you help me write documentation for this function?"
 - "I need to design a solution for a caching mechanism. Any suggestions?"
 
-The AI will provide insights, code snippets, or guidance tailored to your query.
+The AI will provide insights, code snippets, or guidance tailored to your query and configuration.
 
 ## Technologies Used
 
