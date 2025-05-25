@@ -15,6 +15,10 @@ from langchain_core.prompts import (
 )
 import requests
 import logging
+import tiktoken # Import tiktoken
+
+# Define maximum context tokens
+MAX_CONTEXT_TOKENS = 3000
 
 # Initialize Chat Engine
 def init_llm_engine(selected_model, temperature, top_k, top_p):
@@ -42,22 +46,26 @@ def init_llm_engine(selected_model, temperature, top_k, top_p):
 # System Prompt Configuration
 # This system prompt defines the persona and behavior of the AI assistant.
 # It instructs the AI to act as an expert coding assistant, provide concise
-# and correct solutions, use print statements for debugging, and always respond in English.
-# It also specifies the code formatting requirements.
+# and correct solutions, use print statements for debugging, always respond in English,
+# specify code formatting, and manage expectations about context length.
 system_prompt = SystemMessagePromptTemplate.from_template(
     "You are an expert AI coding assistant. Provide concise, correct solutions "
     "with strategic print statements for debugging. Always respond in English. "
     "When providing code, always use Markdown code blocks with the appropriate "
-    "language identifier (e.g., ```python ... ``` or ```javascript ... ```)."
+    "language identifier (e.g., ```python ... ``` or ```javascript ... ```). "
+    "Please note that for very long conversations, I might not recall the earliest "
+    "parts of our discussion to stay focused and efficient."
 )
 
 # Function: Build Chat Prompt Chain
 def build_prompt_chain(message_log):
     """
-    Constructs a LangChain ChatPromptTemplate from the message history.
+    Constructs a LangChain ChatPromptTemplate from the message history,
+    managing the context window to stay within MAX_CONTEXT_TOKENS.
 
-    The prompt includes the system prompt and alternates between human and AI messages
-    based on the provided message log.
+    The prompt includes the system prompt and the most recent messages that fit
+    within the token limit. Messages are added in reverse chronological order
+    (newest first) until the token limit is approached.
 
     Args:
         message_log (list): A list of dictionaries, where each dictionary
@@ -66,13 +74,42 @@ def build_prompt_chain(message_log):
     Returns:
         ChatPromptTemplate: A LangChain ChatPromptTemplate object.
     """
+    # Initialize tokenizer (cl100k_base is a common encoder for OpenAI models)
+    tokenizer = tiktoken.get_encoding("cl100k_base")
+
+    def count_tokens(text):
+        """Helper function to count tokens in a given text."""
+        return len(tokenizer.encode(text))
+
+    # Get system prompt text and count its tokens
+    system_prompt_text = system_prompt.prompt.template
+    system_tokens = count_tokens(system_prompt_text)
+    
+    current_tokens = system_tokens
+    managed_message_log = []
+
+    # Iterate through messages in reverse order (newest first)
+    for msg in reversed(message_log):
+        message_tokens = count_tokens(msg["content"])
+        # Check if adding the current message would exceed the token limit
+        if current_tokens + message_tokens < MAX_CONTEXT_TOKENS:
+            managed_message_log.insert(0, msg) # Add to the beginning to maintain order
+            current_tokens += message_tokens
+        else:
+            # If limit is reached, stop adding older messages
+            logging.info(f"Context token limit reached. Truncating older messages. Current tokens: {current_tokens}")
+            break
+            
+    # Construct the prompt sequence
     prompt_sequence = [system_prompt] # Start with the system prompt
-    # Iterate through the message log and append Human or AI message prompts
-    for msg in message_log:
+    
+    # Add managed messages to the prompt sequence
+    for msg in managed_message_log:
         if msg["role"] == "user":
             prompt_sequence.append(HumanMessagePromptTemplate.from_template(msg["content"]))
         elif msg["role"] == "ai":
             prompt_sequence.append(AIMessagePromptTemplate.from_template(msg["content"]))
+            
     return ChatPromptTemplate.from_messages(prompt_sequence)
 
 # Function: Generate AI Response

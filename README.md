@@ -86,6 +86,11 @@ Once the app is running, interact with the AI Assistant via the web interface:
     - Clicking this button will remove the current conversation from both the application's session and your browser's local storage, allowing you to start a fresh chat.
 - **Improved Code Formatting**:
     - The AI has been instructed to consistently use Markdown code blocks with language identifiers (e.g., ` ```python ... ``` `). This enhances the clarity and readability of code snippets in the chat.
+- **Context Management**:
+    - For very long conversations, the application manages the conversation context to stay within the LLM's processing limits.
+    - It uses a token-based sliding window approach, prioritizing recent parts of the conversation if the total length becomes too extensive (currently around 3000 tokens using `cl100k_base` tokenizer).
+    - This helps ensure stable performance and prevents errors during long interactions.
+    - The AI's system prompt also includes a gentle reminder that it may not recall the earliest parts of a very long discussion.
 
 ### Example Queries:
 
