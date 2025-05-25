@@ -35,7 +35,7 @@ The application is structured for clarity, with the user interface managed by `a
 
 3. **Install dependencies**
 
-   The `requirements.txt` file lists all necessary Python packages, including Streamlit, LangChain components, and Requests.
+   The `requirements.txt` file lists all necessary Python packages, including Streamlit, LangChain components, Requests, `streamlit-autorefresh`, and other utilities.
    ```sh
    pip install -r requirements.txt
    ```
@@ -91,6 +91,14 @@ Once the app is running, interact with the AI Assistant via the web interface:
     - It uses a token-based sliding window approach, prioritizing recent parts of the conversation if the total length becomes too extensive (currently around 3000 tokens using `cl100k_base` tokenizer).
     - This helps ensure stable performance and prevents errors during long interactions.
     - The AI's system prompt also includes a gentle reminder that it may not recall the earliest parts of a very long discussion.
+- **Asynchronous LLM Calls (Non-Blocking UI)**:
+    - The application now processes LLM requests in the background, ensuring the user interface remains responsive.
+    - **User Experience**:
+        - When you send a message, a "🧠 Thinking..." placeholder will appear immediately in the chat.
+        - The chat input field will be temporarily disabled until the AI's response is received.
+        - The application UI should not freeze during LLM processing.
+        - The app uses `streamlit-autorefresh` to periodically check for results in the background, which may cause slight, brief screen refreshes while waiting for the AI's response.
+    - This is achieved using a background task manager (`LLMTaskManager`) and the `streamlit-autorefresh` component for periodic updates.
 
 ### Example Queries:
 
