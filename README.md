@@ -70,6 +70,11 @@ The application is structured for clarity, with the user interface managed by `a
 Once the app is running, interact with the AI Assistant via the web interface:
 
 - **Chat Interface**: Type your coding-related questions into the input box at the bottom of the screen.
+- **Predefined Actions**: Select a specific task from the "Choose Action" dropdown in the sidebar to tailor the AI's focus and system prompt. Available actions include:
+    - **General Chat**: For general coding questions, discussions, and assistance (default).
+    - **Explain Code**: Provide a code snippet and ask the AI to explain its functionality, logic, and purpose.
+    - **Debug Code**: Submit code along with error messages or a description of the issue to get help identifying bugs and potential fixes.
+    - **Write Documentation**: Ask the AI to generate technical documentation (e.g., function summaries, parameter descriptions) for a given piece of code.
 - **Model Selection**: Choose between different DeepSeek models from the sidebar.
 - **Temperature Control**: Adjust the "Select Temperature" slider in the sidebar (range 0.0 to 1.0, default 0.3).
     - Lower values (e.g., 0.1-0.3) produce more focused and deterministic responses.

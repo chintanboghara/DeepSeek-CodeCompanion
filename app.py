@@ -22,6 +22,9 @@ task_manager = LLMTaskManager()
 # Autorefresh every 2 seconds
 st_autorefresh(interval=2000, limit=None, key="llm_refresh")
 
+# Predefined actions for the AI
+PREDEFINED_ACTIONS = ["General Chat", "Explain Code", "Debug Code", "Write Documentation"]
+
 # Function to load CSS
 def load_css(file_name):
     """Loads a CSS file into the Streamlit application.
@@ -46,11 +49,20 @@ def display_sidebar():
     Displays the sidebar with configuration options.
 
     Returns:
-        tuple: A tuple containing selected_model (str), temperature (float),
-               top_k (int), top_p (float), and clear_history_button (bool).
+        tuple: A tuple containing selected_action (str), selected_model (str),
+               temperature (float), top_k (int), top_p (float),
+               and clear_history_button (bool).
     """
     with st.sidebar:
         st.header("⚙️ Configuration")
+        # Action selection
+        selected_action = st.selectbox(
+            "Choose Action",
+            PREDEFINED_ACTIONS,
+            index=0, # Default to "General Chat"
+            help="Select a specific task for the AI to focus on. This will tailor its responses and system prompt."
+        )
+        st.divider() # Visual separation
         # Model selection dropdown
         selected_model = st.selectbox("Choose Model", ["deepseek-r1:1.5b", "deepseek-r1:3b"], index=0)
         # Temperature slider for controlling LLM randomness
@@ -69,7 +81,7 @@ def display_sidebar():
         st.markdown("- 🐍 Python Expert\n- 🐞 Debugging Assistant\n- 📝 Code Documentation\n- 💡 Solution Design")
         st.divider()
         st.markdown("Built with [Ollama](https://ollama.ai/) | [LangChain](https://python.langchain.com/)")
-    return selected_model, temperature, top_k, top_p, clear_history_button
+    return selected_action, selected_model, temperature, top_k, top_p, clear_history_button
 
 def display_chat_interface(message_log):
     """
@@ -94,7 +106,7 @@ display_header()
 localS = LocalStorage(key="deepseek_code_companion_chat")
 
 # Display the sidebar and get configuration settings
-selected_model, temperature, top_k, top_p, clear_history_pressed = display_sidebar()
+selected_action, selected_model, temperature, top_k, top_p, clear_history_pressed = display_sidebar()
 
 # Handle Clear Chat History button click
 if clear_history_pressed:
@@ -180,7 +192,7 @@ if user_query and user_query.strip() and not chat_input_disabled:
     
     # Submit to Task Manager
     # Exclude the placeholder from the prompt chain
-    prompt_chain = build_prompt_chain(st.session_state.message_log[:-1]) 
+    prompt_chain = build_prompt_chain(st.session_state.message_log[:-1], selected_action) 
     task_id = task_manager.submit_task(generate_ai_response, llm_engine, prompt_chain)
     
     # Store task info
