@@ -124,7 +124,35 @@ def display_chat_interface(message_log):
     with chat_container:
         for message in message_log:
             with st.chat_message(message["role"]): # Display message with role (user/ai)
-                st.markdown(message["content"])
+                if message["role"] == "ai":
+                    content = message["content"]
+                    parts = content.split("```")
+                    for i, part in enumerate(parts):
+                        if i % 2 == 1:  # This part is inside ``` ... ```
+                            lines = part.split('\n', 1)
+                            language = None
+                            code_content = part # Default to the whole part if no language line
+                            if lines: # Check if there's at least one line
+                                potential_lang = lines[0].strip().lower()
+                                # List of common languages, extend as needed
+                                known_languages = ["python", "javascript", "java", "c", "cpp", "sql", "html", "css", "shell", "bash", "json", "yaml", "markdown", ""] # Added "" for ``` block without lang
+                                if potential_lang in known_languages:
+                                    language = potential_lang if potential_lang else None # Use None if lang is ""
+                                    if len(lines) > 1:
+                                        code_content = lines[1]
+                                    else:
+                                        code_content = "" # No code content after language specifier
+                                else:
+                                    # No language specified or not recognized, treat whole block as code
+                                    language = None
+                                    code_content = part
+
+                            if code_content.strip(): # Only display if there's actual code
+                                st.code(code_content, language=language)
+                        elif part.strip():  # This part is outside ``` ... ``` and not empty
+                            st.markdown(part)
+                else:  # For user messages or other roles
+                    st.markdown(message["content"])
 
 # --- App Execution Flow ---
 
