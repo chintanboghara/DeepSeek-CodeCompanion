@@ -143,23 +143,25 @@ def generate_ai_response(llm_engine, prompt_chain):
         llm_engine (ChatOllama): The initialized ChatOllama engine.
         prompt_chain (ChatPromptTemplate): The constructed prompt chain for the LLM.
 
-    Returns:
-        str: The AI's response as a string, or an error message string if an issue occurs.
+    Yields:
+        str: Chunks of the AI's response as strings, or a single prefixed error message string.
     """
     try:
         # Define the processing pipeline: prompt -> LLM engine -> string output parser
         processing_pipeline = prompt_chain | llm_engine | StrOutputParser()
-        # Invoke the pipeline to get the AI response
-        return processing_pipeline.invoke({})
+        # Stream the response
+        for chunk in processing_pipeline.stream({}):
+            yield chunk # StrOutputParser should yield strings
+
     except requests.exceptions.ConnectionError as e:
         # Handle errors where the Ollama server cannot be reached
-        logging.exception("ConnectionError during LLM interaction:")
-        return "OLLAMA_CONNECTION_ERROR: Could not connect to Ollama server. Please ensure Ollama is running."
-    except RuntimeError as e:
+        logging.exception("ConnectionError during LLM interaction setup:")
+        yield "OLLAMA_CONNECTION_ERROR: Could not connect to Ollama server. Please ensure Ollama is running."
+    except RuntimeError as e: # Catch runtime errors during pipeline setup or stream initiation
         # Handle runtime errors that might occur within LangChain or Ollama
-        logging.exception("RuntimeError during LLM interaction:")
-        return f"LLM_RUNTIME_ERROR: A runtime error occurred: {str(e)}"
-    except Exception as e:
+        logging.exception("RuntimeError during LLM interaction setup/stream:")
+        yield f"LLM_RUNTIME_ERROR: A runtime error occurred: {str(e)}"
+    except Exception as e: # Catch other unexpected errors during setup/stream
         # Handle any other unexpected errors
-        logging.exception("Unexpected error during LLM interaction:")
-        return f"LLM_UNEXPECTED_ERROR: An unexpected error occurred: {str(e)}"
+        logging.exception("Unexpected error during LLM interaction setup/stream:")
+        yield f"LLM_UNEXPECTED_ERROR: An unexpected error occurred: {str(e)}"
