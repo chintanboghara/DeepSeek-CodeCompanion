@@ -65,6 +65,10 @@ if "selected_session_to_delete" not in st.session_state:
     st.session_state.selected_session_to_delete = "" # Keep it simple
 if 'last_loaded_session' not in st.session_state:
     st.session_state.last_loaded_session = ""
+if 'cached_session_names' not in st.session_state:
+    st.session_state.cached_session_names = None
+if 'session_names_stale' not in st.session_state:
+    st.session_state.session_names_stale = True # Start as stale to force first load
 
 # --- Global Constants and Default Settings ---
 DEFAULT_MODEL = "deepseek-r1:1.5b"
@@ -139,12 +143,43 @@ def save_storage_data(data):
         st.toast("⚠️ Error: Could not save session/settings to local storage. Changes may not persist.", icon="❌")
 
 def get_all_session_names():
-    """Retrieves a sorted list of all saved session names."""
-    data = get_storage_data()
-    return sorted(list(data.get("sessions", {}).keys()))
+    """Retrieves a sorted list of all saved session names, using a cache."""
+    if not st.session_state.session_names_stale and st.session_state.cached_session_names is not None:
+        # logging.info("Returning cached session names.") # Optional debug
+        return st.session_state.cached_session_names
 
+    # Cache is stale or not populated, fetch from LocalStorage
+    # logging.info("Cache stale or empty, fetching session names from LocalStorage.") # Optional debug
+    data = get_storage_data() # Existing helper function
+    names = sorted(list(data.get("sessions", {}).keys()))
+
+    st.session_state.cached_session_names = names
+    st.session_state.session_names_stale = False
+    return names
+
+@st.cache_data
 def format_chat_history_for_markdown(message_log, session_name):
     """Formats the chat history for Markdown export."""
+    # Convert message_log (list of dicts) to a tuple of tuples of items for cacheability,
+    # as @st.cache_data requires hashable inputs.
+    # Each dictionary in the list is converted to a tuple of its (key, value) pairs,
+    # with items sorted by key to ensure consistent hashing for dicts with same content but different order.
+    if not message_log: # Handle empty or None message_log
+        immutable_message_log_for_hashing = tuple()
+    else:
+        try:
+            immutable_message_log_for_hashing = tuple(
+                tuple(sorted(m.items())) if isinstance(m, dict) else tuple(m) # Handle if m is not a dict
+                for m in message_log
+            )
+        except Exception as e:
+            logging.error(f"Error making message_log hashable for caching: {e}")
+            # Fallback: If conversion fails, don't cache or raise error, just proceed.
+            # This part of the plan might need adjustment if we want to enforce cacheability.
+            # For now, this specific error won't be raised to Streamlit, but logged.
+            # The original mutable message_log will be used below if this path is taken.
+            pass # Fallthrough to use original message_log if hashing prep fails
+
     formatted_lines = []
 
     # Determine title: Use session name or a generic title with timestamp
@@ -155,11 +190,12 @@ def format_chat_history_for_markdown(message_log, session_name):
 
     formatted_lines.append(f"# Chat Session: {title}\n\n")
 
-    for message in message_log:
+    # Iterate over the original, mutable message_log for formatting
+    for message_dict in message_log:
         formatted_lines.append("---\n\n") # Separator
 
-        role = message["role"].upper() # USER or AI
-        content = message["content"]
+        role = message_dict.get("role", "UNKNOWN").upper() # USER or AI, with fallback
+        content = message_dict.get("content", "") # Fallback for content
 
         formatted_lines.append(f"**{role}:**\n\n{content}\n\n")
 
@@ -503,6 +539,7 @@ if save_button_clicked:
         save_storage_data(data)
         st.session_state.current_session_name = session_name_to_save
         st.toast(f"Session '{session_name_to_save}' saved successfully!", icon="✅")
+        st.session_state.session_names_stale = True # Invalidate cache
         st.session_state.selected_session_to_load = ""
         st.session_state.selected_session_to_delete = ""
         st.rerun()
@@ -539,6 +576,7 @@ if delete_button_clicked:
             #     data["last_active_session_name"] = None
             save_storage_data(data)
             st.toast(f"Session '{session_name_to_delete}' deleted.", icon="🗑️")
+            st.session_state.session_names_stale = True # Invalidate cache
 
             if st.session_state.current_session_name == session_name_to_delete:
                 st.session_state.current_session_name = "New Session (Unsaved)"
