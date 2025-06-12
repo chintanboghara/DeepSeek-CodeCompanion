@@ -2,39 +2,85 @@
 .git
 .gitignore
 
+# Docker files themselves (usually not needed in the image build context)
+Dockerfile
+docker-compose.yml
+*.md # READMEs, etc., are often not needed in the final image unless used by app
+
 # Python virtual environment
 venv/
 *.venv/
 .venv/
+env/
+ENV/
+__pypackages__/
 
 # Python bytecode and cache
 __pycache__/
 *.py[cod]
 *$py.class
+.pytest_cache/
+
+# Distribution / packaging
+build/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+share/python-wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+MANIFEST
+
+# Installer logs
+pip-log.txt
+pip-delete-this-directory.txt
+
+# Unit test / coverage reports
+htmlcov/
+.tox/
+.nox/
+.coverage
+.coverage.*
+.cache
+nosetests.xml
+coverage.xml
+*.cover
+*.py,cover
+.hypothesis/
 
 # OS-specific files
 .DS_Store
 Thumbs.db
 
-# IDE and project files (examples, add more if needed for specific IDEs)
+# IDE and project files
 .idea/
 .vscode/
-*.suo
-*.ntvs*
-*.njsproj
-*.sln
-*.sw?
+*.project
+*.pydevproject
+*.記憶
+*.sublime-workspace
 
-# Secrets or local configuration (if any, though ideally not in repo)
-# .env
+# Secrets or local configuration
+.env
+*.env
 
-# Test reports or build artifacts (if any)
-# htmlcov/
-# .tox/
-# .nox/
-# .coverage
-# .cache
-# nosetests.xml
-# coverage.xml
-# *.cover
-# *.log
+# Miscellaneous
+*.log
+*.bak
+*.swp
+*~
+# .history
+
+# Streamlit secrets (if managed outside Docker secrets)
+# .streamlit/secrets.toml
+# Note: If .streamlit/secrets.toml is essential AND part of the repo (not recommended for real secrets),
+# then do NOT add it here. Typically, secrets are mounted or injected, not copied.
+# For this project, it seems secrets are not used this way.

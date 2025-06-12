@@ -18,7 +18,7 @@ services:
       - deepseek_net
 
   ollama:
-    image: ollama/ollama:latest # Use the latest official image
+    image: ollama/ollama:latest # Consider pinning to a specific version for more stable deployments, e.g., ollama/ollama:0.1.42
     ports:
       - "11434:11434"
     volumes:
