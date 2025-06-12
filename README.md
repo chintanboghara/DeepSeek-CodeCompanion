@@ -153,6 +153,11 @@ Once the app is running, interact with the AI Assistant via the web interface:
     - **Explain Code**: Provide a code snippet and ask the AI to explain its functionality, logic, and purpose.
     - **Debug Code**: Submit code along with error messages or a description of the issue to get help identifying bugs and potential fixes.
     - **Write Documentation**: Ask the AI to generate technical documentation (e.g., function summaries, parameter descriptions) for a given piece of code.
+- **Flexible Code Input for Analysis**:
+    - For actions like "Explain Code" and "Debug Code", you have multiple ways to provide code:
+        - **Dedicated Text Area**: A text area in the sidebar allows you to paste your code directly.
+        - **File Upload**: You can upload code files (e.g., `.py`, `.js`, `.java`, `.c`, `.cpp`, `.txt`, `.md`, `.json`, `.yaml`, `.html`, `.css`) directly using the file uploader in the sidebar. If a file is uploaded, its content will be used for analysis, taking precedence over code in the text area. The assistant will be informed of the filename.
+    - This allows for easy input of both small snippets and larger codebases.
 - **Model Selection**: Choose between different DeepSeek models from the sidebar.
 - **Temperature Control**: Adjust the "Select Temperature" slider in the sidebar (range 0.0 to 1.0, default 0.3).
     - Lower values (e.g., 0.1-0.3) produce more focused and deterministic responses.

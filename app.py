@@ -44,6 +44,12 @@ if "use_custom_dark_theme" not in st.session_state:
     st.session_state.use_custom_dark_theme = True # Default to True
 if 'dedicated_code_input' not in st.session_state:
     st.session_state.dedicated_code_input = ""
+if "uploaded_file_object" not in st.session_state:
+    st.session_state.uploaded_file_object = None
+if "uploaded_file_content" not in st.session_state:
+    st.session_state.uploaded_file_content = ""
+if "uploaded_file_name" not in st.session_state:
+    st.session_state.uploaded_file_name = ""
 
 # Function to load CSS
 def load_css(file_name):
@@ -92,9 +98,35 @@ def display_sidebar():
                 height=200,
                 key="dedicated_code_input_area"
             )
-        # It's not strictly necessary to clear st.session_state.dedicated_code_input here
-        # if the action changes, as it will simply not be displayed.
-        # Its content will persist if the user switches back to "Explain Code" or "Debug Code".
+
+            uploaded_file = st.file_uploader(
+                "Or upload a code file:",
+                type=['py', 'js', 'java', 'c', 'cpp', 'txt', 'md', 'json', 'yaml', 'html', 'css'],
+                key="code_file_uploader"
+            )
+
+            if uploaded_file is not None:
+                if st.session_state.uploaded_file_name != uploaded_file.name or st.session_state.uploaded_file_object != uploaded_file:
+                    try:
+                        bytes_content = uploaded_file.getvalue()
+                        st.session_state.uploaded_file_content = bytes_content.decode('utf-8')
+                        st.session_state.uploaded_file_name = uploaded_file.name
+                        st.session_state.uploaded_file_object = uploaded_file # Keep track of the object for comparison
+                        st.toast(f"File '{uploaded_file.name}' uploaded and ready.", icon="📄")
+                        # Optionally, clear the text area if a file is uploaded
+                        # st.session_state.dedicated_code_input = ""
+                    except Exception as e:
+                        st.session_state.uploaded_file_content = f"Error reading file: {e}"
+                        st.session_state.uploaded_file_name = uploaded_file.name
+                        st.session_state.uploaded_file_object = uploaded_file
+                        st.error(f"Error reading file {uploaded_file.name}: {e}")
+
+            elif uploaded_file is None and st.session_state.uploaded_file_object is not None:
+                # File was cleared from uploader
+                st.session_state.uploaded_file_object = None
+                st.session_state.uploaded_file_content = ""
+                st.session_state.uploaded_file_name = ""
+                st.toast("Uploaded file cleared.", icon="🗑️")
 
         st.divider() # Visual separation
         
@@ -273,9 +305,16 @@ user_query = st.chat_input("Type your coding question here...", disabled=chat_in
 if user_query and user_query.strip() and not chat_input_disabled:
     final_query_content = user_query  # Start with the original query
     if selected_action in ["Explain Code", "Debug Code"]:
+        uploaded_content = st.session_state.get("uploaded_file_content", "").strip()
         dedicated_code = st.session_state.get("dedicated_code_input", "").strip()
-        if dedicated_code:  # Only modify if there's code in the dedicated input
+
+        if uploaded_content:
+            file_name = st.session_state.get("uploaded_file_name", "uploaded file")
+            final_query_content = f"Code from uploaded file '{file_name}':\n```\n{uploaded_content}\n```\n\nUser question: {user_query}"
+            st.session_state.dedicated_code_input = "" # Clear text area if file is used
+        elif dedicated_code:
             final_query_content = f"Code to analyze:\n```\n{dedicated_code}\n```\n\nUser question: {user_query}"
+        # If neither, final_query_content remains user_query
 
     # Add user's query to the message log
     st.session_state.message_log.append({"role": "user", "content": final_query_content})
@@ -293,7 +332,12 @@ if user_query and user_query.strip() and not chat_input_disabled:
     # Store task info
     st.session_state.active_llm_task = {"id": task_id, "placeholder_idx": placeholder_idx}
 
-    # Clear the dedicated code input if it was used
+    # Clear the dedicated code input area if the action was Explain Code or Debug Code.
+    # This happens regardless of whether a file or the text area was used.
+    # If a file was used, dedicated_code_input was already cleared before submission.
+    # If the text area was used, this clears it.
+    # If neither was used, this clears it.
+    # uploaded_file_content is not cleared here, allowing follow-up on the same file.
     if selected_action in ["Explain Code", "Debug Code"]:
         st.session_state.dedicated_code_input = ""
     
