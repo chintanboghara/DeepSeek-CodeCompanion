@@ -50,6 +50,40 @@ if "uploaded_file_content" not in st.session_state:
     st.session_state.uploaded_file_content = ""
 if "uploaded_file_name" not in st.session_state:
     st.session_state.uploaded_file_name = ""
+if "current_session_name" not in st.session_state:
+    st.session_state.current_session_name = "New Session (Unsaved)"
+if "session_name_input_value" not in st.session_state:
+    st.session_state.session_name_input_value = ""
+if "selected_session_to_load" not in st.session_state:
+    st.session_state.selected_session_to_load = "" # Keep it simple, default to empty string
+if "selected_session_to_delete" not in st.session_state:
+    st.session_state.selected_session_to_delete = "" # Keep it simple
+if 'last_loaded_session' not in st.session_state:
+    st.session_state.last_loaded_session = ""
+
+# Initialize LocalStorage with the new key for session data
+localS = LocalStorage(key="deepseek_code_companion_sessions_v2")
+
+# --- Helper Functions for Local Storage Interaction ---
+def get_storage_data():
+    """Retrieves the entire session data object from local storage."""
+    storage_data = localS.getItem("chat_sessions_data")
+    if storage_data is None:
+        return {"sessions": {}, "last_active_session_name": None}
+    # Ensure 'sessions' key exists, even if 'last_active_session_name' might be missing from old data
+    if 'sessions' not in storage_data:
+        storage_data['sessions'] = {}
+    return storage_data
+
+def save_storage_data(data):
+    """Saves the entire session data object to local storage."""
+    localS.setItem("chat_sessions_data", data)
+
+def get_all_session_names():
+    """Retrieves a sorted list of all saved session names."""
+    data = get_storage_data()
+    return sorted(list(data.get("sessions", {}).keys()))
+# --- End Helper Functions ---
 
 # Function to load CSS
 def load_css(file_name):
@@ -157,7 +191,47 @@ def display_sidebar():
         st.markdown("- 🐍 Python Expert\n- 🐞 Debugging Assistant\n- 📝 Code Documentation\n- 💡 Solution Design")
         st.divider()
         st.markdown("Built with [Ollama](https://ollama.ai/) | [LangChain](https://python.langchain.com/)")
-    return selected_action, selected_model, temperature, top_k, top_p, clear_history_button
+        st.divider() # Visual separation before session management
+
+        # --- Session Management UI ---
+        st.header("💾 Chat Sessions")
+        st.caption(f"Current Session: {st.session_state.get('current_session_name', 'New Session (Unsaved)')}")
+
+        # Save Session
+        st.session_state.session_name_input_value = st.text_input(
+            "Enter Session Name to Save/Overwrite:",
+            value=st.session_state.get('session_name_input_value', st.session_state.get('current_session_name', 'New Session (Unsaved)') if st.session_state.get('current_session_name') != 'New Session (Unsaved)' else ''),
+            key="session_name_text_input",
+            placeholder="Enter a name for this session"
+        )
+        # Capture button clicks directly for logic in the main flow
+        save_button_clicked = st.button("Save Current Session", key="save_session_button_logic")
+
+        # Load Session
+        saved_session_names = get_all_session_names()
+        st.session_state.selected_session_to_load = st.selectbox(
+            "Load Session:",
+            options=[""] + saved_session_names, # Add empty option for placeholder
+            key="load_session_selectbox",
+            index=0, # Default to "Select a session"
+            format_func=lambda x: "Select a session" if x == "" else x
+        )
+        # load_button_clicked will be implicitly handled by checking st.session_state.selected_session_to_load in main logic
+
+        # Delete Session
+        st.session_state.selected_session_to_delete = st.selectbox(
+            "Delete Session:",
+            options=[""] + saved_session_names, # Add empty option for placeholder
+            key="delete_session_selectbox",
+            index=0, # Default to "Select session to delete"
+            format_func=lambda x: "Select session to delete" if x == "" else x
+        )
+        # Capture button clicks directly for logic in the main flow
+        delete_button_clicked = st.button("Delete Selected Session", key="delete_session_button_logic")
+        st.divider()
+
+    # Return button states along with other config; selected values are in session_state
+    return selected_action, selected_model, temperature, top_k, top_p, clear_history_button, save_button_clicked, delete_button_clicked
 
 def display_chat_interface(message_log):
     """
@@ -206,18 +280,84 @@ def display_chat_interface(message_log):
 # Display the main header
 display_header()
 
-# Initialize LocalStorage
-localS = LocalStorage(key="deepseek_code_companion_chat")
-
 # Display the sidebar and get configuration settings
-selected_action, selected_model, temperature, top_k, top_p, clear_history_pressed = display_sidebar()
+# Note: Selected session values are in st.session_state.selected_session_to_load and st.session_state.selected_session_to_delete
+selected_action, selected_model, temperature, top_k, top_p, clear_history_pressed, save_button_clicked, delete_button_clicked = display_sidebar()
 
-# Handle Clear Chat History button click
+# --- Session Management Logic ---
+
+# Save Session Logic
+if save_button_clicked:
+    session_name_to_save = st.session_state.session_name_input_value.strip()
+    if not session_name_to_save:
+        st.toast("⚠️ Session name cannot be empty.", icon="🚫")
+    elif session_name_to_save in ["Select a session", "Select session to delete", "New Session (Unsaved)"]: # Prevent saving with placeholder names
+        st.toast(f"⚠️ Invalid session name: '{session_name_to_save}'. Please choose a different name.", icon="🚫")
+    else:
+        data = get_storage_data()
+        data["sessions"][session_name_to_save] = st.session_state.message_log
+        # data["last_active_session_name"] = session_name_to_save # Optional
+        save_storage_data(data)
+        st.session_state.current_session_name = session_name_to_save
+        st.toast(f"Session '{session_name_to_save}' saved successfully!", icon="✅")
+        st.session_state.selected_session_to_load = ""
+        st.session_state.selected_session_to_delete = ""
+        st.rerun()
+
+# Load Session Logic
+selected_session_to_load_value = st.session_state.get("selected_session_to_load", "")
+if selected_session_to_load_value and selected_session_to_load_value != st.session_state.get('last_loaded_session', ''):
+    data = get_storage_data()
+    if selected_session_to_load_value in data["sessions"]:
+        st.session_state.message_log = data["sessions"][selected_session_to_load_value]
+        st.session_state.current_session_name = selected_session_to_load_value
+        st.session_state.session_name_input_value = selected_session_to_load_value
+        st.session_state.active_llm_task = None
+        st.session_state.last_loaded_session = selected_session_to_load_value
+        st.toast(f"Session '{selected_session_to_load_value}' loaded.", icon="✅")
+        st.session_state.selected_session_to_load = "" # Reset selectbox choice
+        st.rerun()
+    else:
+        st.toast(f"Error: Could not load session '{selected_session_to_load_value}'.", icon="❌")
+        st.session_state.selected_session_to_load = "" # Reset selectbox choice
+elif not selected_session_to_load_value:
+    st.session_state.last_loaded_session = ""
+
+# Delete Session Logic
+if delete_button_clicked:
+    session_name_to_delete = st.session_state.selected_session_to_delete
+    if not session_name_to_delete: # Check if it's an empty string (placeholder selected)
+        st.toast("⚠️ No session selected for deletion.", icon="🚫")
+    else:
+        data = get_storage_data()
+        if session_name_to_delete in data["sessions"]:
+            del data["sessions"][session_name_to_delete]
+            # if data.get("last_active_session_name") == session_name_to_delete:
+            #     data["last_active_session_name"] = None
+            save_storage_data(data)
+            st.toast(f"Session '{session_name_to_delete}' deleted.", icon="🗑️")
+
+            if st.session_state.current_session_name == session_name_to_delete:
+                st.session_state.current_session_name = "New Session (Unsaved)"
+                st.session_state.message_log = [{"role": "ai", "content": "Hi! I'm DeepSeek. How can I help you code today? 💻"}]
+                st.session_state.session_name_input_value = ""
+                st.session_state.active_llm_task = None
+
+            st.session_state.selected_session_to_load = ""
+            st.session_state.selected_session_to_delete = "" # Reset this selectbox
+            st.rerun()
+        else:
+            st.toast(f"Error: Could not find session '{session_name_to_delete}' to delete.", icon="❌")
+            st.session_state.selected_session_to_delete = "" # Reset selectbox
+
+# Handle Clear Chat History button click (now also resets current session name)
 if clear_history_pressed:
     st.session_state.message_log = [{"role": "ai", "content": "Hi! I'm DeepSeek. How can I help you code today? 💻"}]
-    localS.deleteItem('message_log')
-    # Clear active task if any, as history is gone
+    st.session_state.current_session_name = "New Session (Unsaved)"
+    st.session_state.session_name_input_value = ""
+    # localS.deleteItem('message_log') # This was for the old single-session storage
     st.session_state.active_llm_task = None 
+    st.toast("Current session cleared and reset.", icon="✨")
     st.rerun()
 
 # Conditional LLM Engine Initialization & Caching
@@ -240,15 +380,15 @@ if needs_reinitialization:
 else:
     llm_engine = st.session_state.llm_engine_instance
 
-# Session State Management for chat history and active task
+# Session State Management for chat history and active task (Initial Load)
 if "message_log" not in st.session_state:
-    # Try to load chat history from local storage
-    stored_message_log = localS.getItem('message_log')
-    if stored_message_log:
-        st.session_state.message_log = stored_message_log
-    else:
-        # Default welcome message if no history is found
-        st.session_state.message_log = [{"role": "ai", "content": "Hi! I'm DeepSeek. How can I help you code today? 💻"}]
+    # On first load, or if message_log is somehow cleared without session context,
+    # initialize a fresh, unnamed session.
+    # Specific session loading logic (including potentially last active) would go here if desired,
+    # but for now, we start fresh or rely on explicit load.
+    st.session_state.message_log = [{"role": "ai", "content": "Hi! I'm DeepSeek. How can I help you code today? 💻"}]
+    st.session_state.current_session_name = "New Session (Unsaved)"
+    st.session_state.session_name_input_value = ""
 
 if "active_llm_task" not in st.session_state:
     st.session_state.active_llm_task = None

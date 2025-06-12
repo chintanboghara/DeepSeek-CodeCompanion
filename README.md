@@ -169,12 +169,12 @@ Once the app is running, interact with the AI Assistant via the web interface:
     - This parameter limits the LLM's selection of the next token to the K most probable tokens, influencing response diversity.
 - **Top P (Nucleus) Sampling**: Adjust the "Top P" slider in the sidebar (default 0.9, range 0.0-1.0).
     - This parameter selects tokens based on their cumulative probability, ensuring that only the most probable tokens whose sum exceeds P are considered. It provides another way to control response diversity.
-- **Chat History Persistence**:
-    - Your conversations are automatically saved to your browser's local storage.
-    - This means you can close the browser or refresh the page, and your current chat history will be reloaded when you return.
-- **Clear Chat History**:
-    - A "Clear Chat History" button is available in the sidebar.
-    - Clicking this button will remove the current conversation from both the application's session and your browser's local storage, allowing you to start a fresh chat.
+- **Session Management**:
+    - **Saving Sessions**: You can save your current chat conversation for later use. In the sidebar under "💾 Chat Sessions", enter a unique name for your session in the text field and click "Save Current Session". This will store the current chat messages under that name in your browser's local storage. You can overwrite an existing session by saving with the same name.
+    - **Loading Sessions**: To resume a previous conversation, select its name from the "Load Session:" dropdown in the sidebar. The chat history will be loaded, and the session name will be displayed.
+    - **Deleting Sessions**: To remove a saved session, select its name from the "Delete Session:" dropdown and click "Delete Selected Session". This will permanently remove it from your browser's local storage.
+    - **Starting a New Session**: Click the "Clear Chat History" button in the sidebar. This will clear the current chat display and start a fresh, unnamed session. It does not delete any of your saved sessions.
+    - All session data is stored locally in your web browser.
 - **Improved Code Formatting**:
     - The AI has been instructed to consistently use Markdown code blocks with language identifiers (e.g., ` ```python ... ``` `). This enhances the clarity and readability of code snippets in the chat.
 - **Context Management**:
