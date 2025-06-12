@@ -169,6 +169,7 @@ Once the app is running, interact with the AI Assistant via the web interface:
     - This parameter limits the LLM's selection of the next token to the K most probable tokens, influencing response diversity.
 - **Top P (Nucleus) Sampling**: Adjust the "Top P" slider in the sidebar (default 0.9, range 0.0-1.0).
     - This parameter selects tokens based on their cumulative probability, ensuring that only the most probable tokens whose sum exceeds P are considered. It provides another way to control response diversity.
+- **Configuration Persistence**: Your selections for the AI model, temperature, Top-K, and Top-P parameters are saved in your browser's local storage. These settings will be automatically reloaded the next time you open the application.
 - **Session Management**:
     - **Saving Sessions**: You can save your current chat conversation for later use. In the sidebar under "💾 Chat Sessions", enter a unique name for your session in the text field and click "Save Current Session". This will store the current chat messages under that name in your browser's local storage. You can overwrite an existing session by saving with the same name.
     - **Loading Sessions**: To resume a previous conversation, select its name from the "Load Session:" dropdown in the sidebar. The chat history will be loaded, and the session name will be displayed.

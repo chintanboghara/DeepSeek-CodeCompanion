@@ -61,18 +61,53 @@ if "selected_session_to_delete" not in st.session_state:
 if 'last_loaded_session' not in st.session_state:
     st.session_state.last_loaded_session = ""
 
+# --- Global Constants and Default Settings ---
+DEFAULT_MODEL = "deepseek-r1:1.5b"
+DEFAULT_TEMPERATURE = 0.3
+DEFAULT_TOP_K = 40
+DEFAULT_TOP_P = 0.9
+MODEL_OPTIONS = ["deepseek-r1:1.5b", "deepseek-r1:3b"]
+
 # Initialize LocalStorage with the new key for session data
 localS = LocalStorage(key="deepseek_code_companion_sessions_v2")
+
+# --- Initialize Session State for Loaded Settings ---
+# These will hold the values loaded from storage to initialize widgets.
+# They are set once at the beginning of the session.
+if 'loaded_selected_model' not in st.session_state:
+    st.session_state.loaded_selected_model = DEFAULT_MODEL
+if 'loaded_temperature' not in st.session_state:
+    st.session_state.loaded_temperature = DEFAULT_TEMPERATURE
+if 'loaded_top_k' not in st.session_state:
+    st.session_state.loaded_top_k = DEFAULT_TOP_K
+if 'loaded_top_p' not in st.session_state:
+    st.session_state.loaded_top_p = DEFAULT_TOP_P
+if 'settings_loaded' not in st.session_state:
+    st.session_state.settings_loaded = False
 
 # --- Helper Functions for Local Storage Interaction ---
 def get_storage_data():
     """Retrieves the entire session data object from local storage."""
     storage_data = localS.getItem("chat_sessions_data")
+    # Using global defaults defined at the top of the script
+    global_defaults = {
+        "selected_model": DEFAULT_MODEL,
+        "temperature": DEFAULT_TEMPERATURE,
+        "top_k": DEFAULT_TOP_K,
+        "top_p": DEFAULT_TOP_P
+    }
     if storage_data is None:
-        return {"sessions": {}, "last_active_session_name": None}
-    # Ensure 'sessions' key exists, even if 'last_active_session_name' might be missing from old data
-    if 'sessions' not in storage_data:
-        storage_data['sessions'] = {}
+        storage_data = {"sessions": {}, "last_active_session_name": None, "global_settings": global_defaults.copy()}
+
+    if "sessions" not in storage_data:
+        storage_data["sessions"] = {}
+
+    if "global_settings" not in storage_data:
+        storage_data["global_settings"] = global_defaults.copy()
+    else: # Ensure all keys exist in global_settings, add if missing
+        for key, value in global_defaults.items():
+            if key not in storage_data["global_settings"]:
+                storage_data["global_settings"][key] = value
     return storage_data
 
 def save_storage_data(data):
@@ -174,14 +209,22 @@ def display_sidebar():
         st.divider()
 
         # Model selection dropdown
-        selected_model = st.selectbox("Choose Model", ["deepseek-r1:1.5b", "deepseek-r1:3b"], index=0)
+        default_model_index = 0
+        try:
+            default_model_index = MODEL_OPTIONS.index(st.session_state.loaded_selected_model)
+        except ValueError: # If loaded model isn't in options
+            default_model_index = MODEL_OPTIONS.index(DEFAULT_MODEL) # Fallback
+        selected_model = st.selectbox("Choose Model", MODEL_OPTIONS, index=default_model_index)
+
         # Temperature slider for controlling LLM randomness
-        temperature = st.slider("Select Temperature", min_value=0.0, max_value=1.0, value=0.3, step=0.1)
+        temperature = st.slider("Select Temperature", min_value=0.0, max_value=1.0, value=st.session_state.loaded_temperature, step=0.1)
+
         # Top K input
-        top_k = st.number_input("Top K", min_value=1, max_value=100, value=40, step=1,
+        top_k = st.number_input("Top K", min_value=1, max_value=100, value=st.session_state.loaded_top_k, step=1,
                                 help="Controls diversity. Limits the set of next tokens to the K most probable.")
+
         # Top P slider
-        top_p = st.slider("Top P", min_value=0.0, max_value=1.0, value=0.9, step=0.01,
+        top_p = st.slider("Top P", min_value=0.0, max_value=1.0, value=st.session_state.loaded_top_p, step=0.01,
                           help="Controls diversity via nucleus sampling. Selects tokens with cumulative probability > P.")
         st.divider()
         # Clear chat history button
@@ -277,12 +320,53 @@ def display_chat_interface(message_log):
 
 # --- App Execution Flow ---
 
+# Load settings from local storage ONCE upon app initialization/session start
+if not st.session_state.settings_loaded:
+    storage_data = get_storage_data()
+    global_settings = storage_data.get("global_settings", {})
+
+    st.session_state.loaded_selected_model = global_settings.get("selected_model", DEFAULT_MODEL)
+    # Ensure loaded_selected_model is valid, otherwise default
+    if st.session_state.loaded_selected_model not in MODEL_OPTIONS:
+        st.session_state.loaded_selected_model = DEFAULT_MODEL
+
+    st.session_state.loaded_temperature = float(global_settings.get("temperature", DEFAULT_TEMPERATURE))
+    st.session_state.loaded_top_k = int(global_settings.get("top_k", DEFAULT_TOP_K))
+    st.session_state.loaded_top_p = float(global_settings.get("top_p", DEFAULT_TOP_P))
+
+    st.session_state.settings_loaded = True
+    # Optional: Trigger a rerun if settings loaded modify session state that widgets depend on for their *initial* render.
+    # st.rerun() # Usually not needed if session state is set before widget rendering.
+
 # Display the main header
 display_header()
 
 # Display the sidebar and get configuration settings
-# Note: Selected session values are in st.session_state.selected_session_to_load and st.session_state.selected_session_to_delete
+# Sidebar widgets will now use the 'loaded_*' session state values as their defaults
 selected_action, selected_model, temperature, top_k, top_p, clear_history_pressed, save_button_clicked, delete_button_clicked = display_sidebar()
+
+# --- Save Configuration Settings on Change ---
+storage_data_for_settings = get_storage_data()
+current_global_settings = storage_data_for_settings.get("global_settings", {}).copy() # Use .copy()
+
+settings_changed = False
+if current_global_settings.get("selected_model") != selected_model:
+    current_global_settings["selected_model"] = selected_model
+    settings_changed = True
+if current_global_settings.get("temperature") != temperature:
+    current_global_settings["temperature"] = temperature
+    settings_changed = True
+if current_global_settings.get("top_k") != top_k:
+    current_global_settings["top_k"] = top_k
+    settings_changed = True
+if current_global_settings.get("top_p") != top_p:
+    current_global_settings["top_p"] = top_p
+    settings_changed = True
+
+if settings_changed:
+    storage_data_for_settings["global_settings"] = current_global_settings
+    save_storage_data(storage_data_for_settings)
+    # st.toast("Settings saved to local storage!", icon="⚙️") # Optional for debugging
 
 # --- Session Management Logic ---
 
