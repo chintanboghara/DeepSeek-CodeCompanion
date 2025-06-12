@@ -160,25 +160,10 @@ def get_all_session_names():
 @st.cache_data
 def format_chat_history_for_markdown(message_log, session_name):
     """Formats the chat history for Markdown export."""
-    # Convert message_log (list of dicts) to a tuple of tuples of items for cacheability,
-    # as @st.cache_data requires hashable inputs.
-    # Each dictionary in the list is converted to a tuple of its (key, value) pairs,
-    # with items sorted by key to ensure consistent hashing for dicts with same content but different order.
-    if not message_log: # Handle empty or None message_log
-        immutable_message_log_for_hashing = tuple()
-    else:
-        try:
-            immutable_message_log_for_hashing = tuple(
-                tuple(sorted(m.items())) if isinstance(m, dict) else tuple(m) # Handle if m is not a dict
-                for m in message_log
-            )
-        except Exception as e:
-            logging.error(f"Error making message_log hashable for caching: {e}")
-            # Fallback: If conversion fails, don't cache or raise error, just proceed.
-            # This part of the plan might need adjustment if we want to enforce cacheability.
-            # For now, this specific error won't be raised to Streamlit, but logged.
-            # The original mutable message_log will be used below if this path is taken.
-            pass # Fallthrough to use original message_log if hashing prep fails
+    # message_log is expected to be a list of dictionaries.
+    # For @st.cache_data, Streamlit will attempt to hash it.
+    # If message_log structure becomes very complex or contains unhashable types,
+    # this caching might fail or behave unexpectedly. For now, assume it's cacheable.
 
     formatted_lines = []
 
