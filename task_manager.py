@@ -27,7 +27,6 @@ class LLMTaskManager:
         """
         st.session_state[f"task_{task_id}_stream_content"] = ""
         st.session_state[f"task_{task_id}_stream_status"] = "streaming"
-        # Optional: st.session_state[f"task_{task_id}_stream_error_details"] = None
 
         accumulated_content_for_final_result = []
         target_func_name = target_func.__name__ # For logging
@@ -44,7 +43,6 @@ class LLMTaskManager:
                        chunk.startswith("LLM_UNEXPECTED_ERROR:")):
                         logging.error(f"Task {task_id} ({target_func_name}) yielded a prefixed error: {chunk}")
                         st.session_state[f"task_{task_id}_stream_status"] = "error"
-                        # st.session_state[f"task_{task_id}_stream_error_details"] = chunk # Optional: store specific error string if needed separately
                         # Store the error string itself as an Exception. This allows get_task_result
                         # to raise it, maintaining compatibility with how errors were handled before streaming.
                         return Exception(chunk)
@@ -59,15 +57,12 @@ class LLMTaskManager:
             # Stream completed successfully
             final_result_str = "".join(accumulated_content_for_final_result)
             st.session_state[f"task_{task_id}_stream_status"] = "completed"
-            # Store the full result for get_task_result
-            # st.session_state._llm_tasks_full_streamed_results[task_id] = final_result_str
             return final_result_str # This becomes the result of the future
 
         except Exception as e:
             # Handle exceptions that occur if target_func itself fails before/during iteration
             logging.exception(f"Exception during task {task_id} ({target_func_name}) execution: {e}")
             st.session_state[f"task_{task_id}_stream_status"] = "error"
-            # st.session_state[f"task_{task_id}_stream_error_details"] = str(e)
             return e # This exception instance becomes the result of the future
 
 
@@ -198,9 +193,5 @@ class LLMTaskManager:
             del st.session_state[f"task_{task_id}_stream_content"]
         if f"task_{task_id}_stream_status" in st.session_state:
             del st.session_state[f"task_{task_id}_stream_status"]
-        # if f"task_{task_id}_stream_error_details" in st.session_state:
-        #     del st.session_state[f"task_{task_id}_stream_error_details"]
-        # if task_id in st.session_state._llm_tasks_full_streamed_results: # If used
-        #     del st.session_state._llm_tasks_full_streamed_results[task_id]
 
         logging.info(f"Cleaned up result and stream states for task {task_id}")
