@@ -27,7 +27,7 @@ OLLAMA_BASE_URL = os.environ.get("OLLAMA_BASE_URL", "http://localhost:11434")
 st_autorefresh(interval=2000, limit=None, key="llm_refresh")
 
 # Predefined actions for the AI
-PREDEFINED_ACTIONS = ["General Chat", "Explain Code", "Debug Code", "Write Documentation"]
+PREDEFINED_ACTIONS = ["General Chat", "Explain Code", "Debug Code", "Write Documentation", "Optimize Code", "Write Unit Tests", "Translate Code"]
 
 # Initialize session state keys for LLM engine caching and configuration
 if "llm_engine_instance" not in st.session_state:
@@ -91,7 +91,7 @@ def display_sidebar():
         )
 
         # Conditionally display dedicated code input area
-        if selected_action in ["Explain Code", "Debug Code"]:
+        if selected_action in ["Explain Code", "Debug Code", "Optimize Code", "Write Unit Tests", "Translate Code"]:
             st.session_state.dedicated_code_input = st.text_area(
                 "Paste your code here:",
                 value=st.session_state.dedicated_code_input,
@@ -304,7 +304,7 @@ user_query = st.chat_input("Type your coding question here...", disabled=chat_in
 
 if user_query and user_query.strip() and not chat_input_disabled:
     final_query_content = user_query  # Start with the original query
-    if selected_action in ["Explain Code", "Debug Code"]:
+    if selected_action in ["Explain Code", "Debug Code", "Optimize Code", "Write Unit Tests", "Translate Code"]:
         uploaded_content = st.session_state.get("uploaded_file_content", "").strip()
         dedicated_code = st.session_state.get("dedicated_code_input", "").strip()
 
@@ -338,7 +338,7 @@ if user_query and user_query.strip() and not chat_input_disabled:
     # If the text area was used, this clears it.
     # If neither was used, this clears it.
     # uploaded_file_content is not cleared here, allowing follow-up on the same file.
-    if selected_action in ["Explain Code", "Debug Code"]:
+    if selected_action in ["Explain Code", "Debug Code", "Optimize Code", "Write Unit Tests", "Translate Code"]:
         st.session_state.dedicated_code_input = ""
     
     # Clear the actual chat input field by resetting its key
