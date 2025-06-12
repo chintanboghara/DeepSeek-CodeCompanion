@@ -277,7 +277,7 @@ def display_sidebar():
                           help="Controls diversity via nucleus sampling. Selects tokens with cumulative probability > P.")
         st.divider()
         # Clear chat history button
-        clear_history_button = st.button("Clear Chat History")
+        clear_history_button = st.button("Reset Current Chat") # Changed label
         st.divider()
         st.markdown("### Model Capabilities")
         st.markdown("- 🐍 Python Expert\n- 🐞 Debugging Assistant\n- 📝 Code Documentation\n- 💡 Solution Design")
@@ -286,7 +286,7 @@ def display_sidebar():
         st.divider() # Visual separation before session management
 
         # --- Session Management UI ---
-        st.header("💾 Chat Sessions")
+        st.subheader("💾 Chat Sessions")
         st.caption(f"Current Session: {st.session_state.get('current_session_name', 'New Session (Unsaved)')}")
 
         # Save Session
