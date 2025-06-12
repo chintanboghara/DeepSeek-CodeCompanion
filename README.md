@@ -197,6 +197,7 @@ Once the app is running, interact with the AI Assistant via the web interface:
         - The app uses `streamlit-autorefresh` to periodically check for results in the background, which may cause slight, brief screen refreshes while waiting for the AI's response.
     - This is achieved using a background task manager (`LLMTaskManager`) and the `streamlit-autorefresh` component for periodic updates.
 - **Streaming Responses**: AI responses now stream in token by token. This means you'll start seeing the beginning of longer responses much faster, significantly improving the perceived responsiveness of the assistant.
+- **Feedback on AI Responses**: You can provide feedback on individual AI messages using the "👍" (helpful) and "👎" (not helpful) buttons located beneath each AI response. Once feedback is given for a message, the buttons for that message will be disabled. This feedback is stored as part of your chat session if you save the session. (Note: Currently, this feedback is only stored locally and not sent to any central server for analysis.)
 
 ### Example Queries:
 
