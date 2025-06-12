@@ -147,6 +147,7 @@ Refer to the official Docker and Ollama documentation for detailed instructions 
 
 Once the app is running, interact with the AI Assistant via the web interface:
 
+- **Responsible Usage**: As with all generative AI tools, please be mindful of the code and queries you input. While the assistant aims to be helpful, always review and verify its suggestions before use in critical applications.
 - **Chat Interface**: Type your coding-related questions into the input box at the bottom of the screen.
 - **Predefined Actions**: Select a specific task from the "Choose Action" dropdown in the sidebar to tailor the AI's focus and system prompt. Available actions include:
     - **General Chat**: For general coding questions, discussions, and assistance (default).
