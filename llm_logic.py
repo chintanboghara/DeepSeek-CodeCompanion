@@ -154,12 +154,12 @@ def generate_ai_response(llm_engine, prompt_chain):
     except requests.exceptions.ConnectionError as e:
         # Handle errors where the Ollama server cannot be reached
         logging.exception("ConnectionError during LLM interaction:")
-        return "⚠️ Error: Could not connect to Ollama server. Please ensure Ollama is running."
+        return "OLLAMA_CONNECTION_ERROR: Could not connect to Ollama server. Please ensure Ollama is running."
     except RuntimeError as e:
         # Handle runtime errors that might occur within LangChain or Ollama
         logging.exception("RuntimeError during LLM interaction:")
-        return f"⚠️ Error: A runtime error occurred: {str(e)}"
+        return f"LLM_RUNTIME_ERROR: A runtime error occurred: {str(e)}"
     except Exception as e:
         # Handle any other unexpected errors
         logging.exception("Unexpected error during LLM interaction:")
-        return f"⚠️ Error: An unexpected error occurred: {str(e)}"
+        return f"LLM_UNEXPECTED_ERROR: An unexpected error occurred: {str(e)}"

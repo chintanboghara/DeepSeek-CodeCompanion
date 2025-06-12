@@ -176,6 +176,7 @@ Once the app is running, interact with the AI Assistant via the web interface:
     - **Deleting Sessions**: To remove a saved session, select its name from the "Delete Session:" dropdown and click "Delete Selected Session". This will permanently remove it from your browser's local storage.
     - **Starting a New Session**: Click the "Clear Chat History" button in the sidebar. This will clear the current chat display and start a fresh, unnamed session. It does not delete any of your saved sessions.
     - All session data is stored locally in your web browser.
+- **Improved Error Notifications**: Critical errors, such as issues connecting to the AI model, are now displayed prominently at the top of the chat interface with troubleshooting tips. File processing errors will appear in the sidebar. This provides clearer feedback on any operational issues.
 - **Improved Code Formatting**:
     - The AI has been instructed to consistently use Markdown code blocks with language identifiers (e.g., ` ```python ... ``` `). This enhances the clarity and readability of code snippets in the chat.
 - **Context Management**:
