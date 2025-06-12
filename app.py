@@ -31,6 +31,10 @@ st_autorefresh(interval=2000, limit=None, key="llm_refresh")
 PREDEFINED_ACTIONS = ["General Chat", "Explain Code", "Debug Code", "Write Documentation", "Optimize Code", "Write Unit Tests", "Translate Code"]
 
 # Initialize session state keys for LLM engine caching and configuration
+if "critical_error_message" not in st.session_state:
+    st.session_state.critical_error_message = None
+if "file_upload_error_message" not in st.session_state:
+    st.session_state.file_upload_error_message = None
 if "llm_engine_instance" not in st.session_state:
     st.session_state.llm_engine_instance = None
 if "current_llm_model_name" not in st.session_state:
@@ -88,8 +92,16 @@ if 'settings_loaded' not in st.session_state:
 
 # --- Helper Functions for Local Storage Interaction ---
 def get_storage_data():
-    """Retrieves the entire session data object from local storage."""
-    storage_data = localS.getItem("chat_sessions_data")
+    """Retrieves the entire session data object from local storage with error handling."""
+    storage_data_from_ls = None
+    try:
+        storage_data_from_ls = localS.getItem("chat_sessions_data")
+    except Exception as e:
+        logging.error(f"Error reading from LocalStorage: {e}. Initializing with default data.")
+        # storage_data_from_ls remains None, will be handled by the next block
+
+    storage_data = storage_data_from_ls # Assign to storage_data for existing logic flow
+
     # Using global defaults defined at the top of the script
     global_defaults = {
         "selected_model": DEFAULT_MODEL,
@@ -97,15 +109,22 @@ def get_storage_data():
         "top_k": DEFAULT_TOP_K,
         "top_p": DEFAULT_TOP_P
     }
-    if storage_data is None:
+    if storage_data is None: # Handles both getItem returning None and getItem raising an exception
         storage_data = {"sessions": {}, "last_active_session_name": None, "global_settings": global_defaults.copy()}
 
-    if "sessions" not in storage_data:
+    # Ensure 'sessions' key exists and is a dictionary
+    if not isinstance(storage_data, dict): # If data is corrupted and not a dict
+        logging.warning(f"LocalStorage data is corrupted (not a dict). Re-initializing with default data.")
+        storage_data = {"sessions": {}, "last_active_session_name": None, "global_settings": global_defaults.copy()}
+
+    if "sessions" not in storage_data or not isinstance(storage_data.get("sessions"), dict):
         storage_data["sessions"] = {}
 
-    if "global_settings" not in storage_data:
+    # Ensure 'global_settings' key exists, is a dictionary, and is complete
+    if "global_settings" not in storage_data or not isinstance(storage_data.get("global_settings"), dict):
         storage_data["global_settings"] = global_defaults.copy()
-    else: # Ensure all keys exist in global_settings, add if missing
+    else:
+        # Ensure all individual global settings keys exist, applying defaults if missing
         for key, value in global_defaults.items():
             if key not in storage_data["global_settings"]:
                 storage_data["global_settings"][key] = value
@@ -113,7 +132,11 @@ def get_storage_data():
 
 def save_storage_data(data):
     """Saves the entire session data object to local storage."""
-    localS.setItem("chat_sessions_data", data)
+    try:
+        localS.setItem("chat_sessions_data", data)
+    except Exception as e:
+        logging.error(f"Error writing to LocalStorage: {e}. Data may not have been saved.")
+        st.toast("⚠️ Error: Could not save session/settings to local storage. Changes may not persist.", icon="❌")
 
 def get_all_session_names():
     """Retrieves a sorted list of all saved session names."""
@@ -204,22 +227,22 @@ def display_sidebar():
                         st.session_state.uploaded_file_content = bytes_content.decode('utf-8')
                         st.session_state.uploaded_file_name = uploaded_file.name
                         st.session_state.uploaded_file_object = uploaded_file
-                        st.session_state.file_upload_error_message = None # Clear previous error
+                        st.session_state.file_upload_error_message = None # Clear previous error on successful upload
                         st.toast(f"File '{uploaded_file.name}' uploaded and ready.", icon="📄")
                     except Exception as e:
-                        st.session_state.uploaded_file_content = "" # Clear content
-                        st.session_state.uploaded_file_name = uploaded_file.name # Store name to show which file failed
-                        st.session_state.uploaded_file_object = uploaded_file
+                        st.session_state.uploaded_file_content = "" # Clear content if error
+                        st.session_state.uploaded_file_name = uploaded_file.name # Keep name for error message
+                        st.session_state.uploaded_file_object = uploaded_file # Keep object for context
                         st.session_state.file_upload_error_message = f"Error reading file '{uploaded_file.name}': {str(e)}. Please ensure it's a valid text file (e.g., UTF-8 encoded)."
 
-            elif uploaded_file is None and st.session_state.uploaded_file_object is not None: # File was cleared by user
+            elif uploaded_file is None and st.session_state.uploaded_file_object is not None: # File was cleared by user from uploader
                 st.session_state.uploaded_file_object = None
                 st.session_state.uploaded_file_content = ""
                 st.session_state.uploaded_file_name = ""
-                st.session_state.file_upload_error_message = None # Clear error if file is removed
+                st.session_state.file_upload_error_message = None # Clear any previous file error
                 st.toast("Uploaded file cleared.", icon="🗑️")
 
-            # Display file upload error if it exists, right below the uploader
+            # Display file upload error if it exists (moved from previous location to be right after uploader block)
             if st.session_state.get("file_upload_error_message"):
                 st.error(st.session_state.file_upload_error_message, icon="⚠️")
 
@@ -610,27 +633,23 @@ if st.session_state.active_llm_task:
         st.rerun() # Rerun to enable chat input and reflect final state
 
     elif stream_status == "error":
-        raw_error_details = "Unknown streaming error"
+        raw_error_details = "Unknown streaming error" # Default
         try:
-            # This will raise the exception stored by _process_streaming_task in self.results[task_id]
-            task_manager.get_task_result(task_id) 
+            task_manager.get_task_result(task_id) # This will raise the exception stored by _process_streaming_task
         except Exception as e:
-            raw_error_details = str(e) # This should be the prefixed error string or exception message
+            raw_error_details = str(e)
 
-        user_friendly_error = f"An unexpected error occurred: {raw_error_details}" # Default
+        user_friendly_error = f"An unexpected error occurred with the AI model: {raw_error_details}" # Fallback message
         if raw_error_details.startswith("OLLAMA_CONNECTION_ERROR:"):
             ollama_url = os.environ.get("OLLAMA_BASE_URL", "http://localhost:11434")
             user_friendly_error = (
-                "**Failed to Connect to AI Model**
-
-"
-                f"Could not connect to the Ollama server. Please ensure:
-"
-                f"1. Ollama is installed and running on your system.
-"
-                f"2. The Ollama server is accessible at the configured URL: **{ollama_url}**.
-"
-                f"3. The selected model (`{selected_model}`) is available in your Ollama instance."
+                "**Failed to Connect to AI Model**\n\n"
+                f"Could not connect to the Ollama server. Please ensure:\n"
+                f"1. Ollama is installed and running on your system.\n"
+                f"2. The Ollama server is accessible at the configured URL: **{ollama_url}**.\n"
+                f"   (If running via Docker Compose, this is usually `http://ollama:11434` internally. "
+                f"If running `app.py` and Ollama locally, it's typically `http://localhost:11434`.)\n"
+                f"3. The selected model (`{selected_model}`) is available in your Ollama instance (use `ollama list` to check)."
             )
         elif raw_error_details.startswith("LLM_RUNTIME_ERROR:"):
             user_friendly_error = f"A runtime error occurred with the AI model: {raw_error_details.replace('LLM_RUNTIME_ERROR:', '').strip()}"
@@ -642,7 +661,7 @@ if st.session_state.active_llm_task:
 
         task_manager.cleanup_task_result(task_id)
         st.session_state.active_llm_task = None
-        st.rerun() # Rerun to show error and enable input
+        st.rerun()
 
     # Fallback for initial "submitted" status or if stream_status is somehow missed by autorefresh cycles
     # before task_manager sets it to "streaming", "completed", or "error".
@@ -713,6 +732,11 @@ chat_input_disabled = st.session_state.active_llm_task is not None
 user_query = st.chat_input("Type your coding question here...", disabled=chat_input_disabled, key="user_query_input")
 
 if user_query and user_query.strip() and not chat_input_disabled:
+    # Clear previous critical error on new valid input
+    if st.session_state.get("critical_error_message"):
+        st.session_state.critical_error_message = None
+        # No st.rerun() here, as the normal flow of processing the query will cause a rerun.
+
     final_query_content = user_query  # Start with the original query
     if selected_action in ["Explain Code", "Debug Code", "Optimize Code", "Write Unit Tests", "Translate Code"]:
         uploaded_content = st.session_state.get("uploaded_file_content", "").strip()
