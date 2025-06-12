@@ -488,7 +488,7 @@ if st.session_state.active_llm_task:
         st.session_state.message_log[placeholder_idx]["content"] = ai_response
         task_manager.cleanup_task_result(task_id)
         st.session_state.active_llm_task = None
-        localS.setItem('message_log', st.session_state.message_log) # Save final history
+        # localS.setItem('message_log', st.session_state.message_log) # Removed: Session saving is manual
         st.rerun()
     elif status == "error":
         error_details_val = "Unknown error" # Default error message
