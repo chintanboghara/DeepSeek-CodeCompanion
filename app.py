@@ -481,46 +481,136 @@ if "active_llm_task" not in st.session_state:
 if st.session_state.active_llm_task:
     task_id = st.session_state.active_llm_task["id"]
     placeholder_idx = st.session_state.active_llm_task["placeholder_idx"]
-    status = task_manager.get_task_status(task_id)
 
-    if status == "completed":
-        ai_response = task_manager.get_task_result(task_id)
-        st.session_state.message_log[placeholder_idx]["content"] = ai_response
+    # Check stream status from session state (populated by task_manager._process_streaming_task)
+    stream_status = st.session_state.get(f"task_{task_id}_stream_status")
+    current_stream_content = st.session_state.get(f"task_{task_id}_stream_content", "")
+
+    # Update the placeholder content with the latest streamed content
+    if st.session_state.message_log[placeholder_idx]["content"] != current_stream_content and current_stream_content:
+        st.session_state.message_log[placeholder_idx]["content"] = current_stream_content
+        # Autorefresh will handle the rerun to display the latest chunk.
+
+    if stream_status == "streaming":
+        # Content is being updated by the block above.
+        # Keep input disabled, spinner active (implicitly via placeholder text or explicit spinner).
+        pass # Wait for st_autorefresh to pick up next chunk
+
+    elif stream_status == "completed":
+        # Final content is already in current_stream_content and set in message_log.
+        # Now, finalize the task with task_manager to get the official result (which should match)
+        # and perform cleanup.
+        try:
+            final_content = task_manager.get_task_result(task_id) # This also raises if task had an internal error
+            st.session_state.message_log[placeholder_idx]["content"] = final_content
+        except Exception as e: # Should ideally be caught by stream_status == "error"
+            logging.error(f"Error retrieving final result for completed stream task {task_id}: {e}")
+            # This indicates a discrepancy, handle as an error
+            st.session_state.critical_error_message = f"Error finalizing task: {str(e)}"
+            st.session_state.message_log[placeholder_idx]["content"] = "🤖 Error finalizing response."
+
         task_manager.cleanup_task_result(task_id)
         st.session_state.active_llm_task = None
-        # localS.setItem('message_log', st.session_state.message_log) # Removed: Session saving is manual
-        st.rerun()
-    elif status == "error":
-        error_details_val = "Unknown error" # Default error message
+        st.rerun() # Rerun to enable chat input and reflect final state
+
+    elif stream_status == "error":
+        raw_error_details = "Unknown streaming error"
         try:
-            # This re-raises the exception, so we catch it to get details
+            # This will raise the exception stored by _process_streaming_task in self.results[task_id]
             task_manager.get_task_result(task_id) 
         except Exception as e:
-            error_details_val = str(e)
-        st.session_state.message_log[placeholder_idx]["content"] = f"⚠️ Error: {error_details_val}"
+            raw_error_details = str(e) # This should be the prefixed error string or exception message
+
+        user_friendly_error = f"An unexpected error occurred: {raw_error_details}" # Default
+        if raw_error_details.startswith("OLLAMA_CONNECTION_ERROR:"):
+            ollama_url = os.environ.get("OLLAMA_BASE_URL", "http://localhost:11434")
+            user_friendly_error = (
+                "**Failed to Connect to AI Model**
+
+"
+                f"Could not connect to the Ollama server. Please ensure:
+"
+                f"1. Ollama is installed and running on your system.
+"
+                f"2. The Ollama server is accessible at the configured URL: **{ollama_url}**.
+"
+                f"3. The selected model (`{selected_model}`) is available in your Ollama instance."
+            )
+        elif raw_error_details.startswith("LLM_RUNTIME_ERROR:"):
+            user_friendly_error = f"A runtime error occurred with the AI model: {raw_error_details.replace('LLM_RUNTIME_ERROR:', '').strip()}"
+        elif raw_error_details.startswith("LLM_UNEXPECTED_ERROR:"):
+            user_friendly_error = f"An unexpected error occurred with the AI model: {raw_error_details.replace('LLM_UNEXPECTED_ERROR:', '').strip()}"
+
+        st.session_state.critical_error_message = user_friendly_error
+        st.session_state.message_log[placeholder_idx]["content"] = "🤖 I encountered an issue. Please see the error message displayed."
+
         task_manager.cleanup_task_result(task_id)
         st.session_state.active_llm_task = None
-        localS.setItem('message_log', st.session_state.message_log) # Save history with error
-        st.rerun()
-    elif status == "not_found" and task_id in st.session_state.get('_llm_tasks_results', {}):
-        # This case implies status was checked after result was processed and future removed
-        # but before active_llm_task was cleared. Or a general logic error.
-        # For safety, clear active_llm_task if result is present
-        logging.warning(f"Task {task_id} was not found in futures but result exists. Clearing active task.")
-        # Attempt to finalize the message if possible, or mark as unknown error
-        if task_id in st.session_state._llm_tasks_results:
-            result = st.session_state._llm_tasks_results[task_id]
-            if isinstance(result, Exception):
-                 st.session_state.message_log[placeholder_idx]["content"] = f"⚠️ Error: {str(result)}"
-            else:
-                 st.session_state.message_log[placeholder_idx]["content"] = result
-            localS.setItem('message_log', st.session_state.message_log) # Save history
-        task_manager.cleanup_task_result(task_id) # ensure cleanup
-        st.session_state.active_llm_task = None
-        st.rerun()
+        st.rerun() # Rerun to show error and enable input
+
+    # Fallback for initial "submitted" status or if stream_status is somehow missed by autorefresh cycles
+    # before task_manager sets it to "streaming", "completed", or "error".
+    # This also covers the brief period after submission but before _process_streaming_task starts.
+    elif stream_status == "submitted" or stream_status is None:
+        # Check the underlying future status if stream status isn't definitive yet
+        # This is more of a safeguard or for very fast non-streaming-like errors from the wrapper.
+        underlying_status = task_manager.get_task_status(task_id) # Checks future.done() etc.
+        if underlying_status == "completed": # Wrapper finished, means stream completed or errored out early
+            try:
+                final_content = task_manager.get_task_result(task_id)
+                st.session_state.message_log[placeholder_idx]["content"] = final_content
+                if st.session_state.get(f"task_{task_id}_stream_status") != "error": # Ensure we don't overwrite an error status
+                    st.session_state[f"task_{task_id}_stream_status"] = "completed" # Mark explicitly
+            except Exception as e:
+                # Error handling similar to stream_status == "error"
+                raw_error_details = str(e)
+                user_friendly_error = f"An unexpected error occurred: {raw_error_details}"
+                if raw_error_details.startswith("OLLAMA_CONNECTION_ERROR:"):
+                    ollama_url = os.environ.get("OLLAMA_BASE_URL", "http://localhost:11434")
+                    user_friendly_error = (
+                        "**Failed to Connect to AI Model**
+
+"
+                        f"Could not connect to the Ollama server. Please ensure:
+"
+                        f"1. Ollama is installed and running on your system.
+"
+                        f"2. The Ollama server is accessible at the configured URL: **{ollama_url}**.
+"
+                        f"3. The selected model (`{selected_model}`) is available in your Ollama instance."
+                    )
+                elif raw_error_details.startswith("LLM_RUNTIME_ERROR:"):
+                    user_friendly_error = f"A runtime error occurred with the AI model: {raw_error_details.replace('LLM_RUNTIME_ERROR:', '').strip()}"
+                elif raw_error_details.startswith("LLM_UNEXPECTED_ERROR:"):
+                    user_friendly_error = f"An unexpected error occurred with the AI model: {raw_error_details.replace('LLM_UNEXPECTED_ERROR:', '').strip()}"
+                st.session_state.critical_error_message = user_friendly_error
+                st.session_state.message_log[placeholder_idx]["content"] = "🤖 I encountered an issue. Please see the error message displayed."
+                st.session_state[f"task_{task_id}_stream_status"] = "error" # Mark explicitly
+
+            task_manager.cleanup_task_result(task_id)
+            st.session_state.active_llm_task = None
+            st.rerun()
+        elif underlying_status == "error": # Wrapper itself failed catastrophically or error caught by get_task_status
+            raw_error_details = "Unknown error from task manager"
+            try:
+                task_manager.get_task_result(task_id)
+            except Exception as e:
+                raw_error_details = str(e)
+            # (Error parsing and display logic as above)
+            st.session_state.critical_error_message = f"A task execution error occurred: {raw_error_details}"
+            st.session_state.message_log[placeholder_idx]["content"] = "🤖 I encountered an issue. Please see the error message displayed."
+            st.session_state[f"task_{task_id}_stream_status"] = "error" # Mark explicitly
+            task_manager.cleanup_task_result(task_id)
+            st.session_state.active_llm_task = None
+            st.rerun()
+        # else, it's "running" or "submitted", so just wait for autorefresh.
 
 # Display the existing chat messages
 display_chat_interface(st.session_state.message_log)
+
+# Display critical error message if it exists (below chat, above input)
+if st.session_state.get("critical_error_message"):
+    st.error(st.session_state.critical_error_message, icon="🚨")
 
 # User Input Handling
 chat_input_disabled = st.session_state.active_llm_task is not None

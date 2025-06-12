@@ -195,6 +195,7 @@ Once the app is running, interact with the AI Assistant via the web interface:
         - The application UI should not freeze during LLM processing.
         - The app uses `streamlit-autorefresh` to periodically check for results in the background, which may cause slight, brief screen refreshes while waiting for the AI's response.
     - This is achieved using a background task manager (`LLMTaskManager`) and the `streamlit-autorefresh` component for periodic updates.
+- **Streaming Responses**: AI responses now stream in token by token. This means you'll start seeing the beginning of longer responses much faster, significantly improving the perceived responsiveness of the assistant.
 
 ### Example Queries:
 
