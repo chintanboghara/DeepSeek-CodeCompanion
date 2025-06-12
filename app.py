@@ -42,6 +42,8 @@ if "current_top_p" not in st.session_state:
     st.session_state.current_top_p = None
 if "use_custom_dark_theme" not in st.session_state:
     st.session_state.use_custom_dark_theme = True # Default to True
+if 'dedicated_code_input' not in st.session_state:
+    st.session_state.dedicated_code_input = ""
 
 # Function to load CSS
 def load_css(file_name):
@@ -81,6 +83,19 @@ def display_sidebar():
             index=0, # Default to "General Chat"
             help="Select a specific task for the AI to focus on. This will tailor its responses and system prompt."
         )
+
+        # Conditionally display dedicated code input area
+        if selected_action in ["Explain Code", "Debug Code"]:
+            st.session_state.dedicated_code_input = st.text_area(
+                "Paste your code here:",
+                value=st.session_state.dedicated_code_input,
+                height=200,
+                key="dedicated_code_input_area"
+            )
+        # It's not strictly necessary to clear st.session_state.dedicated_code_input here
+        # if the action changes, as it will simply not be displayed.
+        # Its content will persist if the user switches back to "Explain Code" or "Debug Code".
+
         st.divider() # Visual separation
         
         # Theme toggle
@@ -256,8 +271,14 @@ chat_input_disabled = st.session_state.active_llm_task is not None
 user_query = st.chat_input("Type your coding question here...", disabled=chat_input_disabled, key="user_query_input")
 
 if user_query and user_query.strip() and not chat_input_disabled:
+    final_query_content = user_query  # Start with the original query
+    if selected_action in ["Explain Code", "Debug Code"]:
+        dedicated_code = st.session_state.get("dedicated_code_input", "").strip()
+        if dedicated_code:  # Only modify if there's code in the dedicated input
+            final_query_content = f"Code to analyze:\n```\n{dedicated_code}\n```\n\nUser question: {user_query}"
+
     # Add user's query to the message log
-    st.session_state.message_log.append({"role": "user", "content": user_query})
+    st.session_state.message_log.append({"role": "user", "content": final_query_content})
     
     # Add a placeholder AI message
     ai_placeholder = {"role": "ai", "content": "🧠 Thinking..."}
@@ -271,6 +292,10 @@ if user_query and user_query.strip() and not chat_input_disabled:
     
     # Store task info
     st.session_state.active_llm_task = {"id": task_id, "placeholder_idx": placeholder_idx}
+
+    # Clear the dedicated code input if it was used
+    if selected_action in ["Explain Code", "Debug Code"]:
+        st.session_state.dedicated_code_input = ""
     
     # Clear the actual chat input field by resetting its key
     st.session_state.user_query_input = "" 
