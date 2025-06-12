@@ -203,22 +203,25 @@ def display_sidebar():
                         bytes_content = uploaded_file.getvalue()
                         st.session_state.uploaded_file_content = bytes_content.decode('utf-8')
                         st.session_state.uploaded_file_name = uploaded_file.name
-                        st.session_state.uploaded_file_object = uploaded_file # Keep track of the object for comparison
-                        st.toast(f"File '{uploaded_file.name}' uploaded and ready.", icon="📄")
-                        # Optionally, clear the text area if a file is uploaded
-                        # st.session_state.dedicated_code_input = ""
-                    except Exception as e:
-                        st.session_state.uploaded_file_content = f"Error reading file: {e}"
-                        st.session_state.uploaded_file_name = uploaded_file.name
                         st.session_state.uploaded_file_object = uploaded_file
-                        st.error(f"Error reading file {uploaded_file.name}: {e}")
+                        st.session_state.file_upload_error_message = None # Clear previous error
+                        st.toast(f"File '{uploaded_file.name}' uploaded and ready.", icon="📄")
+                    except Exception as e:
+                        st.session_state.uploaded_file_content = "" # Clear content
+                        st.session_state.uploaded_file_name = uploaded_file.name # Store name to show which file failed
+                        st.session_state.uploaded_file_object = uploaded_file
+                        st.session_state.file_upload_error_message = f"Error reading file '{uploaded_file.name}': {str(e)}. Please ensure it's a valid text file (e.g., UTF-8 encoded)."
 
-            elif uploaded_file is None and st.session_state.uploaded_file_object is not None:
-                # File was cleared from uploader
+            elif uploaded_file is None and st.session_state.uploaded_file_object is not None: # File was cleared by user
                 st.session_state.uploaded_file_object = None
                 st.session_state.uploaded_file_content = ""
                 st.session_state.uploaded_file_name = ""
+                st.session_state.file_upload_error_message = None # Clear error if file is removed
                 st.toast("Uploaded file cleared.", icon="🗑️")
+
+            # Display file upload error if it exists, right below the uploader
+            if st.session_state.get("file_upload_error_message"):
+                st.error(st.session_state.file_upload_error_message, icon="⚠️")
 
         st.divider() # Visual separation
         
@@ -264,9 +267,11 @@ def display_sidebar():
         st.caption(f"Current Session: {st.session_state.get('current_session_name', 'New Session (Unsaved)')}")
 
         # Save Session
+        # Ensure st.session_state.session_name_input_value is initialized (e.g., to "" or current_session_name)
+        # It is initialized to "" at the top and updated when sessions are loaded/cleared.
         st.session_state.session_name_input_value = st.text_input(
             "Enter Session Name to Save/Overwrite:",
-            value=st.session_state.get('session_name_input_value', st.session_state.get('current_session_name', 'New Session (Unsaved)') if st.session_state.get('current_session_name') != 'New Session (Unsaved)' else ''),
+            value=st.session_state.get('session_name_input_value', ""), # Simplified: directly use the managed session state value
             key="session_name_text_input",
             placeholder="Enter a name for this session"
         )

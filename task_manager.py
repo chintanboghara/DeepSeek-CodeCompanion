@@ -44,9 +44,10 @@ class LLMTaskManager:
                        chunk.startswith("LLM_UNEXPECTED_ERROR:")):
                         logging.error(f"Task {task_id} ({target_func_name}) yielded a prefixed error: {chunk}")
                         st.session_state[f"task_{task_id}_stream_status"] = "error"
-                        # st.session_state[f"task_{task_id}_stream_error_details"] = chunk
-                        # Store the error string itself as an Exception for get_task_result compatibility
-                        return Exception(chunk) # This becomes the result of the future
+                        # st.session_state[f"task_{task_id}_stream_error_details"] = chunk # Optional: store specific error string if needed separately
+                        # Store the error string itself as an Exception. This allows get_task_result
+                        # to raise it, maintaining compatibility with how errors were handled before streaming.
+                        return Exception(chunk)
                     first_chunk = False
 
                 # Append chunk to session state for app.py to display
@@ -94,57 +95,77 @@ class LLMTaskManager:
         If completed or error, stores result/exception in st.session_state._llm_tasks_results
         and removes future from st.session_state._llm_tasks_futures.
         """
+        # Initial Checks (Task Not Found / Already Processed):
         if task_id not in st.session_state._llm_tasks_futures:
-            # Check if result is already stored (task finished and future removed)
+            # Task future not found. Check if it already completed and its result/error is stored.
             if task_id in st.session_state._llm_tasks_results:
                 return "error" if isinstance(st.session_state._llm_tasks_results[task_id], Exception) else "completed"
-            # Or if stream status indicates completion/error, but future might be gone due to quick completion
+            # Alternatively, check stream status if future was removed very quickly after completion/error.
+            # This handles edge cases where the task finishes and cleans up its future before this status check.
             stream_status = st.session_state.get(f"task_{task_id}_stream_status")
             if stream_status == "completed": return "completed"
             if stream_status == "error": return "error"
-            return "not_found"
+            return "not_found" # Truly not found or cleaned up
 
         future = st.session_state._llm_tasks_futures[task_id]
 
+        # Future Running:
         if future.running():
-            # For streaming tasks, "running" means the _process_streaming_task is running.
-            # The actual stream progress is in st.session_state[f"task_{task_id}_stream_status"]
-            # ("submitted", "streaming", "completed", "error")
-            # This method can return "running" and app.py can check the stream_status for finer details.
+            # The ThreadPoolExecutor future is running, meaning _process_streaming_task is active.
+            # app.py should primarily rely on st.session_state[f"task_{task_id}_stream_status"]
+            # (e.g., "submitted", "streaming") for fine-grained status during the run.
+            # This "running" state is more about the executor's perspective.
             return "running"
-        elif future.done():
-            # _process_streaming_task has finished. Its return value (or exception) is the "result".
-            try:
-                result_or_exception = future.result() # This is what _process_streaming_task returned
-                st.session_state._llm_tasks_results[task_id] = result_or_exception
 
-                # Update stream_status one last time based on future's result if not already set by _process_streaming_task
-                # This handles cases where _process_streaming_task itself might fail before setting stream_status.
+        # Future Done (Main Processing Block):
+        elif future.done():
+            # The _process_streaming_task (the wrapper handling the generator) has finished.
+            # Its return value (final accumulated string or an Exception) needs to be processed and stored.
+            try:
+                result_or_exception = future.result() # This is what _process_streaming_task returned.
+                st.session_state._llm_tasks_results[task_id] = result_or_exception # Store final outcome.
+
+                # Ensure st.session_state stream_status is definitively set to 'completed' or 'error'.
+                # This covers cases where _process_streaming_task might have failed before setting
+                # its own stream_status, or if the stream was successful but we need to ensure
+                # the final status reflects that for any subsequent checks.
                 current_stream_status = st.session_state.get(f"task_{task_id}_stream_status", "unknown")
+
                 if isinstance(result_or_exception, Exception):
-                    if current_stream_status != "error": # Don't overwrite if already set by _process_streaming_task
+                    # If the wrapper task itself returned an exception (e.g., prefixed error from stream, or other exception).
+                    if current_stream_status != "error": # Avoid overwriting if _process_streaming_task already set it.
                         st.session_state[f"task_{task_id}_stream_status"] = "error"
                     logging.error(f"Task {task_id} (wrapper) resulted in error: {result_or_exception}")
+                    # Future is done, remove it.
                     del st.session_state._llm_tasks_futures[task_id]
                     return "error"
-                else: # Successfully completed
-                    if current_stream_status not in ["completed", "error"]: # Avoid overwriting specific error from inside stream
+                else:
+                    # If the wrapper task returned a successful result (the fully accumulated string).
+                    if current_stream_status not in ["completed", "error"]: # Avoid overwriting a specific error status set from within the stream.
                          st.session_state[f"task_{task_id}_stream_status"] = "completed"
                     logging.info(f"Task {task_id} (wrapper) completed. Final result stored.")
+                    # Future is done, remove it.
                     del st.session_state._llm_tasks_futures[task_id]
                     return "completed"
 
-            except Exception as e: # Should ideally be caught by the future.result() line above
+            except Exception as e:
+                # This catches exceptions if future.result() itself raises something unexpected
+                # (e.g., an error in ThreadPoolExecutor, though _process_streaming_task is designed
+                # to return exceptions rather than letting them be raised here from its own execution).
                 st.session_state._llm_tasks_results[task_id] = e
-                st.session_state[f"task_{task_id}_stream_status"] = "error" # Ensure status reflects this
+                st.session_state[f"task_{task_id}_stream_status"] = "error" # Ensure status reflects this critical failure.
                 logging.error(f"Task {task_id} (wrapper) future.result() raised an unexpected exception: {e}")
-                if task_id in st.session_state._llm_tasks_futures: # Ensure cleanup
+                if task_id in st.session_state._llm_tasks_futures: # Ensure cleanup if not already deleted.
                     del st.session_state._llm_tasks_futures[task_id]
                 return "error"
 
-        # Fallback based on stream status if future is somehow not running or done but still present
-        # This also helps if called before future.done() is true but stream is already working
-        return st.session_state.get(f"task_{task_id}_stream_status", "unknown")
+        # Fallback/Final Status Check:
+        # If future is not 'running' and not 'done' (an unlikely state for a future managed by this class),
+        # or if this method is called at a point where _process_streaming_task has updated stream_status
+        # but the future.done() state hasn't been processed in this same call yet.
+        # This primarily relies on the stream_status set by _process_streaming_task as the source of truth
+        # once the stream has actively started or finished.
+        return st.session_state.get(f"task_{task_id}_stream_status", "unknown") # Default to 'unknown' if no status set yet.
 
 
     def get_task_result(self, task_id):
