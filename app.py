@@ -329,7 +329,7 @@ def display_chat_interface(message_log):
     """
     chat_container = st.container()
     with chat_container:
-        for message in message_log:
+        for i, message in enumerate(message_log): # Use enumerate to get index
             with st.chat_message(message["role"]): # Display message with role (user/ai)
                 if message["role"] == "ai":
                     content = message["content"]
@@ -358,6 +358,54 @@ def display_chat_interface(message_log):
                                 st.code(code_content, language=language)
                         elif part.strip():  # This part is outside ``` ... ``` and not empty
                             st.markdown(part)
+
+                    # Add feedback buttons for AI messages
+                    feedback_given = message.get("feedback") # 'thumbs_up', 'thumbs_down', or None
+                    button_container = st.container()
+                    with button_container:
+                        col1, col2, _ = st.columns([0.07, 0.07, 0.86]) # Adjusted ratios slightly
+
+                        thumbs_up_clicked = False
+                        with col1:
+                            thumbs_up_clicked = st.button(
+                                "👍",
+                                key=f"thumbs_up_{i}",
+                                disabled=(feedback_given is not None),
+                                help="Mark this response as helpful"
+                            )
+
+                        thumbs_down_clicked = False
+                        with col2:
+                            thumbs_down_clicked = st.button(
+                                "👎",
+                                key=f"thumbs_down_{i}",
+                                disabled=(feedback_given is not None),
+                                help="Mark this response as not helpful"
+                            )
+
+                        if thumbs_up_clicked:
+                            st.session_state.message_log[i]['feedback'] = 'thumbs_up'
+                            print(f"Feedback: thumbs_up for message index {i}: '{st.session_state.message_log[i]['content'][:50]}...'")
+                            # Save the updated message_log to the current session if it's not "New Session (Unsaved)"
+                            if st.session_state.current_session_name != "New Session (Unsaved)":
+                                data = get_storage_data()
+                                if st.session_state.current_session_name in data["sessions"]: # Should always be true if not new
+                                    data["sessions"][st.session_state.current_session_name] = st.session_state.message_log
+                                    save_storage_data(data)
+                                    # print(f"Saved feedback to session: {st.session_state.current_session_name}") # Optional debug
+                            st.rerun()
+
+                        if thumbs_down_clicked:
+                            st.session_state.message_log[i]['feedback'] = 'thumbs_down'
+                            print(f"Feedback: thumbs_down for message index {i}: '{st.session_state.message_log[i]['content'][:50]}...'")
+                            # Save the updated message_log to the current session
+                            if st.session_state.current_session_name != "New Session (Unsaved)":
+                                data = get_storage_data()
+                                if st.session_state.current_session_name in data["sessions"]:
+                                    data["sessions"][st.session_state.current_session_name] = st.session_state.message_log
+                                    save_storage_data(data)
+                                    # print(f"Saved feedback to session: {st.session_state.current_session_name}") # Optional debug
+                            st.rerun()
                 else:  # For user messages or other roles
                     st.markdown(message["content"])
 
