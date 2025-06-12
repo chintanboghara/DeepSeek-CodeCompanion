@@ -16,6 +16,7 @@ from llm_logic import (
 from task_manager import LLMTaskManager # Import TaskManager
 import logging # Import logging
 import os # Import os
+from datetime import datetime # Added for chat history formatting
 
 # Initialize Task Manager
 task_manager = LLMTaskManager()
@@ -118,6 +119,28 @@ def get_all_session_names():
     """Retrieves a sorted list of all saved session names."""
     data = get_storage_data()
     return sorted(list(data.get("sessions", {}).keys()))
+
+def format_chat_history_for_markdown(message_log, session_name):
+    """Formats the chat history for Markdown export."""
+    formatted_lines = []
+
+    # Determine title: Use session name or a generic title with timestamp
+    if session_name and session_name != "New Session (Unsaved)":
+        title = session_name
+    else:
+        title = f"Chat Conversation ({datetime.now().strftime('%Y-%m-%d %H:%M:%S')})"
+
+    formatted_lines.append(f"# Chat Session: {title}\n\n")
+
+    for message in message_log:
+        formatted_lines.append("---\n\n") # Separator
+
+        role = message["role"].upper() # USER or AI
+        content = message["content"]
+
+        formatted_lines.append(f"**{role}:**\n\n{content}\n\n")
+
+    return "".join(formatted_lines)
 # --- End Helper Functions ---
 
 # Function to load CSS
@@ -271,7 +294,27 @@ def display_sidebar():
         )
         # Capture button clicks directly for logic in the main flow
         delete_button_clicked = st.button("Delete Selected Session", key="delete_session_button_logic")
+
+        st.divider() # Divider before download button
+
+        # Download Chat History Button
+        if st.session_state.get("message_log"): # Only show if there's a history
+            markdown_chat_history = format_chat_history_for_markdown(
+                st.session_state.message_log,
+                st.session_state.get("current_session_name", "Chat")
+            )
+            session_file_name_part = st.session_state.get("current_session_name", "Chat").replace(" ", "_").replace("(", "").replace(")", "").replace(":", "")
+            download_file_name = f"{session_file_name_part}_{datetime.now().strftime('%Y%m%d_%H%M%S')}.md"
+
+            st.download_button(
+                label="📥 Download Chat History",
+                data=markdown_chat_history,
+                file_name=download_file_name,
+                mime="text/markdown",
+                key="download_chat_button"
+            )
         st.divider()
+
 
     # Return button states along with other config; selected values are in session_state
     return selected_action, selected_model, temperature, top_k, top_p, clear_history_button, save_button_clicked, delete_button_clicked
