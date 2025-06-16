@@ -1,86 +1,86 @@
-# Git
+# ───────────────────────────────────────────────────────────────────────────────
+# Version control
+# ───────────────────────────────────────────────────────────────────────────────
 .git
 .gitignore
 
-# Docker files themselves (usually not needed in the image build context)
-Dockerfile
+# ───────────────────────────────────────────────────────────────────────────────
+# Docker artifacts (you rarely need these in the build context)
+# ───────────────────────────────────────────────────────────────────────────────
+.dockerignore
 docker-compose.yml
-*.md # READMEs, etc., are often not needed in the final image unless used by app
+Dockerfile
 
-# Python virtual environment
-venv/
-*.venv/
-.venv/
-env/
-ENV/
-__pypackages__/
-
-# Python bytecode and cache
+# ───────────────────────────────────────────────────────────────────────────────
+# Python bytecode, cache, and virtual environments
+# ───────────────────────────────────────────────────────────────────────────────
 __pycache__/
 *.py[cod]
 *$py.class
+.venv/
+venv/
+env/
+ENV/
+pip-wheel-metadata/
 .pytest_cache/
 
+# ───────────────────────────────────────────────────────────────────────────────
 # Distribution / packaging
+# ───────────────────────────────────────────────────────────────────────────────
 build/
 dist/
 downloads/
-eggs/
-.eggs/
-lib/
-lib64/
-parts/
-sdist/
-var/
-wheels/
-share/python-wheels/
 *.egg-info/
-.installed.cfg
 *.egg
-MANIFEST
+.eggs/
 
-# Installer logs
-pip-log.txt
-pip-delete-this-directory.txt
-
-# Unit test / coverage reports
-htmlcov/
-.tox/
-.nox/
-.coverage
-.coverage.*
-.cache
-nosetests.xml
+# ───────────────────────────────────────────────────────────────────────────────
+# Test & coverage reports
+# ───────────────────────────────────────────────────────────────────────────────
 coverage.xml
 *.cover
-*.py,cover
-.hypothesis/
+.coverage*
+nosetests.xml
+htmlcov/
 
+# ───────────────────────────────────────────────────────────────────────────────
+# IDE & editor settings
+# ───────────────────────────────────────────────────────────────────────────────
+.idea/
+.vscode/
+*.sublime-project
+*.sublime-workspace
+
+# ───────────────────────────────────────────────────────────────────────────────
 # OS-specific files
+# ───────────────────────────────────────────────────────────────────────────────
 .DS_Store
 Thumbs.db
 
-# IDE and project files
-.idea/
-.vscode/
-*.project
-*.pydevproject
-*.記憶
-*.sublime-workspace
-
-# Secrets or local configuration
-.env
-*.env
-
-# Miscellaneous
+# ───────────────────────────────────────────────────────────────────────────────
+# Logs & miscellaneous
+# ───────────────────────────────────────────────────────────────────────────────
 *.log
 *.bak
 *.swp
 *~
-# .history
 
-# Streamlit secrets (if managed outside Docker secrets)
-# .streamlit/secrets.toml
-# Note: If .streamlit/secrets.toml is essential AND part of the repo (not recommended for real secrets),
-# then do NOT add it here. Typically, secrets are mounted or injected, not copied.
-# For this project, it seems secrets are not used this way.
+# ───────────────────────────────────────────────────────────────────────────────
+# Environment & secrets
+# ───────────────────────────────────────────────────────────────────────────────
+.env
+.env.*            # e.g., .env.local, .env.production
+.streamlit/      # if you have a .streamlit directory for secrets.toml
+
+# ───────────────────────────────────────────────────────────────────────────────
+# Jupyter
+# ───────────────────────────────────────────────────────────────────────────────
+.ipynb_checkpoints/
+*.ipynb
+
+# ───────────────────────────────────────────────────────────────────────────────
+# Node (if accidentally present)
+# ───────────────────────────────────────────────────────────────────────────────
+node_modules/
+npm-debug.log*
+yarn-error.log*
