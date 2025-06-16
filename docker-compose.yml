@@ -1,5 +1,3 @@
-version: '3.8'
-
 services:
   app:
     build:
@@ -7,35 +5,33 @@ services:
       dockerfile: Dockerfile
     ports:
       - "8501:8501"
-    environment:
-      - OLLAMA_BASE_URL=http://ollama:11434
-      # Add any other environment variables your Streamlit app might need
-      # For example, if you had specific logging levels or feature flags:
-      # - LOG_LEVEL=INFO
+    env_file:
+      - .env                              # load OLLAMA_BASE_URL and other vars
+    restart: unless-stopped              # auto‑recover on failure
     depends_on:
-      - ollama
+      ollama:
+        condition: service_healthy       # wait until Ollama is healthy
     networks:
       - deepseek_net
 
   ollama:
-    image: ollama/ollama:latest # Consider pinning to a specific version for more stable deployments, e.g., ollama/ollama:0.1.42
+    image: ollama/ollama:0.1.42          # pin to a specific version
     ports:
       - "11434:11434"
     volumes:
       - ollama_data:/root/.ollama
-    # To enable GPU access (example for NVIDIA GPUs, uncomment and adapt if needed):
-    # deploy:
-    #   resources:
-    #     reservations:
-    #       devices:
-    #         - driver: nvidia
-    #           count: 1 # or 'all'
-    #           capabilities: [gpu]
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "--fail", "http://localhost:11434/health"]
+      interval: 15s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
     networks:
       - deepseek_net
 
 volumes:
-  ollama_data: # This volume persists Ollama models
+  ollama_data:
 
 networks:
   deepseek_net:
