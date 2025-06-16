@@ -706,17 +706,12 @@ if st.session_state.active_llm_task:
                 if raw_error_details.startswith("OLLAMA_CONNECTION_ERROR:"):
                     ollama_url = os.environ.get("OLLAMA_BASE_URL", "http://localhost:11434")
                     user_friendly_error = (
-                        "**Failed to Connect to AI Model**
-
-"
-                        f"Could not connect to the Ollama server. Please ensure:
-"
-                        f"1. Ollama is installed and running on your system.
-"
-                        f"2. The Ollama server is accessible at the configured URL: **{ollama_url}**.
-"
-                        f"3. The selected model (`{selected_model}`) is available in your Ollama instance."
-                    )
+                    "**Failed to Connect to AI Model**\n\n"
+                    "Could not connect to the Ollama server. Please ensure:\n"
+                    "1. Ollama is installed and running on your system.\n"
+                    f"2. The Ollama server is accessible at the configured URL: **{ollama_url}**.\n"
+                    f"3. The selected model (`{selected_model}`) is available in your Ollama instance."
+                )
                 elif raw_error_details.startswith("LLM_RUNTIME_ERROR:"):
                     user_friendly_error = f"A runtime error occurred with the AI model: {raw_error_details.replace('LLM_RUNTIME_ERROR:', '').strip()}"
                 elif raw_error_details.startswith("LLM_UNEXPECTED_ERROR:"):
